@@ -8,6 +8,7 @@ import User from "../model/user.js";
 import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
+import {verifyEmail} from "./user.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -111,6 +112,10 @@ export const signIn = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
+        await verifyEmail({
+            subject: 'Login Success',
+            html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
+        })
 
         const token = generateToken({ id: admin._id }, '1d');
 
