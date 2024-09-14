@@ -28,7 +28,7 @@ export  const sendMail = async ({ to, subject, html }) => {
         });
 
         // Log the sent email response
-        console.log('Email sent successfully:', email , api);
+        console.log('Email sent successfully');
         return email;
     } catch (error) {
         console.error('Error sending email:', error);

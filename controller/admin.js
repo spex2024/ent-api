@@ -9,7 +9,7 @@ import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
 import {verifyEmail} from "./user.js";
-import {sendSuccessMail} from "../helper/mail.js";
+import {sendMail, sendSuccessMail} from "../helper/mail.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -124,7 +124,7 @@ export const signIn = async (req, res) => {
         });
 
         sendSuccessMail({
-            to: 'ekowfirminno@gmail.com',
+            to: 'ekowfirmino@gmail.com',
             subject: 'Login Success',
             html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
         });
@@ -137,14 +137,14 @@ export const signIn = async (req, res) => {
 };
 
 
-export const signOut = (req, res) => {
+export const signOut = async  (req, res) => {
     res.cookie('token', '', {
         domain: '.ekowenu.site',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 0 // Set the cookie to expire immediately
     });
-
+     await sendMail({})
     res.status(200).json({ message: "Sign-out successful" });
 };
 
