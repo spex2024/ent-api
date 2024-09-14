@@ -8,6 +8,7 @@ import User from "../model/user.js";
 import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
+import {sendMail} from "../helper/mail.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -81,8 +82,11 @@ export const createAdmin = async (req, res) => {
                 imageUrl,
                 imagePublicId,
             });
-
+            await  sendMail({  to: email,
+                subject: 'Sign Up Success',
+                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully</p>`,})
             res.status(200).json({ message: "Admin created successfully", admin });
+
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: "Server error", error });
