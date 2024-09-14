@@ -115,8 +115,9 @@ export const signIn = async (req, res) => {
         const token = generateToken({ id: admin._id }, '1d');
 
         res.cookie('token', token, {
+            domain: '.ekowenu.site',
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'none' in production, 'lax' otherwise
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
