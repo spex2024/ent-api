@@ -20,7 +20,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser())
 app.use(cors({
-    origin: [''], // Replace with your client URL
+    origin: ['https://admin.ekowenu.site'], // Replace with your client URL
     credentials: true,
 }));
 
