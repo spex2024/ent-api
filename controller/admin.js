@@ -130,6 +130,7 @@ export const signIn = async (req, res) => {
 
 export const signOut = (req, res) => {
     res.cookie('token', '', {
+        domain: '.ekowenu.site',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 0 // Set the cookie to expire immediately
