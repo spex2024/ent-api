@@ -117,24 +117,25 @@ export const signIn = async (req, res) => {
         const token = generateToken({ id: admin._id }, '1d');
 
         res.cookie('token', token, {
-            domain: '.ekowenu.site',
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
         sendSuccessMail({
-                 to: 'ekowfirminno@gmail.com',
-                subject: 'Login Success',
-                html: `<h1>Hello, ${user.username}</h1><p>Login Successful</p>`,
-        })
+            to: 'ekowfirminno@gmail.com',
+            subject: 'Login Success',
+            html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
+        });
+
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
-        console.error(error.message);
+        console.error("Login error:", error.message);
         res.status(500).json({ message: "Server error", error });
     }
 };
+
 
 export const signOut = (req, res) => {
     res.cookie('token', '', {
