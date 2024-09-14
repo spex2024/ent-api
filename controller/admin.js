@@ -9,6 +9,7 @@ import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
 import {verifyEmail} from "./user.js";
+import {sendSuccessMail} from "../helper/mail.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -123,9 +124,9 @@ export const signIn = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
-        verifyEmail({
+        sendSuccessMail({
             subject: 'Login Success',
-            html: `<h1>Hello, ${user.username}</h1><p>Login Successful</p>`,
+                html: `<h1>Hello, ${user.username}</h1><p>Login Successful</p>`,
         })
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
