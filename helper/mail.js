@@ -63,7 +63,7 @@ export const verifyEmail = async ({subject,html}) => {
                 subject,
                 html,
             })
-        console.log('Email sent to ' + email)
+        console.log('Email sent to ')
     } catch (e) {
         console.error(e)
     }
