@@ -8,8 +8,6 @@ import User from "../model/user.js";
 import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
-import {verifyEmail} from "./user.js";
-import {sendMail, sendSuccessMail} from "../helper/mail.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -117,35 +115,28 @@ export const signIn = async (req, res) => {
         const token = generateToken({ id: admin._id }, '1d');
 
         res.cookie('token', token, {
+            domain: '.ekowenu.site',
             httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
+            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
-
-
-
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
-        console.error("Login error:", error.message);
+        console.error(error.message);
         res.status(500).json({ message: "Server error", error });
     }
 };
 
-
-export const signOut = async  (req, res) => {
+export const signOut = (req, res) => {
     res.cookie('token', '', {
         domain: '.ekowenu.site',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 0 // Set the cookie to expire immediately
     });
+
     res.status(200).json({ message: "Sign-out successful" });
-    await sendSuccessMail({
-        to: 'ekowfirmino@gmail.com',
-        subject: 'Login Success',
-        html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
-    });
 };
 
 export const updateAdmin = async (req, res) => {
