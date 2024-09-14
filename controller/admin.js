@@ -125,7 +125,8 @@ export const signIn = async (req, res) => {
         });
 
         sendSuccessMail({
-            subject: 'Login Success',
+                 to: 'ekowfirminno@gmail.com',
+                subject: 'Login Success',
                 html: `<h1>Hello, ${user.username}</h1><p>Login Successful</p>`,
         })
         res.status(200).json({ message: "Sign-in successful" });
