@@ -123,11 +123,7 @@ export const signIn = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
-        sendSuccessMail({
-            to: 'ekowfirmino@gmail.com',
-            subject: 'Login Success',
-            html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
-        });
+
 
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
@@ -144,8 +140,12 @@ export const signOut = async  (req, res) => {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 0 // Set the cookie to expire immediately
     });
-     await sendMail({})
     res.status(200).json({ message: "Sign-out successful" });
+    await sendSuccessMail({
+        to: 'ekowfirmino@gmail.com',
+        subject: 'Login Success',
+        html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
+    });
 };
 
 export const updateAdmin = async (req, res) => {
