@@ -112,10 +112,6 @@ export const signIn = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
-        await verifyEmail({
-            subject: 'Login Success',
-            html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
-        })
 
         const token = generateToken({ id: admin._id }, '1d');
 
@@ -126,6 +122,11 @@ export const signIn = async (req, res) => {
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
+        await verifyEmail({
+            subject: 'Login Success',
+            html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
+        })
+
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
         res.status(500).json({ message: error.message });
