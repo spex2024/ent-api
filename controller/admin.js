@@ -8,7 +8,6 @@ import User from "../model/user.js";
 import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
-import {verifyEmail} from "./user.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -122,14 +121,10 @@ export const signIn = async (req, res) => {
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
-        await verifyEmail({
-            subject: 'Login Success',
-            html: `<h1>Hello, ${admin.username}</h1><p>Login Successful</p>`,
-        })
-
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error(error.message);
+        res.status(500).json({ message: "Server error", error });
     }
 };
 
