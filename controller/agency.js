@@ -148,7 +148,7 @@ export const agencySignUp = async (req, res) => {
                 imagePublicId: uploadedPhoto.public_id
             });
 
-            sendVerificationEmail(agency, token); // Send verification email with JWT token
+            await sendVerificationEmail(agency, token); // Send verification email with JWT token
 
             setTimeout(async () => {
                 const agencyToDelete = await Agency.findOne({ email, token });
