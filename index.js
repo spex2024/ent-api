@@ -49,26 +49,12 @@ app.get('/health-check', (req, res) => {
     res.status(200).send('Successfully deployed.App is Healthy! ):')
 })
 
-// Connect to MongoDB and start server
-// connectToMongoDB()
-//     .then(() => {
-//         app.listen(PORT, () => {
-//             console.log(`Server is running on port ${PORT}`);
-//         });
-//     })
-//     .catch((error) => {
-//         console.error('Failed to connect to MongoDB', error);
-//     });
+
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => app.listen(process.env.PORT, () => {
         console.log(`Server connected to the database and running on port ${process.env.PORT}`);
     }))
     .catch((err) => console.log(`Database connection error: ${err.message}`));
-
-// Add this to catch unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-    console.log('Unhandled Rejection at:', promise, 'reason:', reason);
-});
 
 
 
