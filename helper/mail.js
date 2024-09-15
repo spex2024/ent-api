@@ -21,7 +21,7 @@ export  const sendMail = async ({ to, subject, html }) => {
     try {
         // Use Resend to send the email
         const email = await resend.emails.send({
-            from: 'enunoch@spexafrica.app', // Replace with your verified sender email
+            from: 'hello@spexafrica.app', // Replace with your verified sender email
             to,
             subject,
             html,
