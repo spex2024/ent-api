@@ -36,7 +36,7 @@ export  const sendMail = async ({ to, subject, html }) => {
     }
 };
 
-export const sendSuccessMail = async ({ to, subject, html }) => {
+export const sendSuccessMail = ({ to, subject, html }) => {
     transporter.sendMail({
         to,
         subject,

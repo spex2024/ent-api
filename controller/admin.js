@@ -86,7 +86,7 @@ export const createAdmin = async (req, res) => {
                 subject: 'Sign Up Success',
                 html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully</p>`,})
 
-            await sendSuccessMail({
+            sendSuccessMail({
                 to: email,
                 subject: 'Sign Up Success',
                 html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully</p>`,})
