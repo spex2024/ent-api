@@ -20,15 +20,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser())
 app.use(cors({
-    origin: (origin, callback) => {
-        const allowedRegex = /^https:\/\/([a-zA-Z0-9-]+\.)?spexafrica\.site$/; // Matches any subdomain of spexafrica.site
-        if (allowedRegex.test(origin) || !origin) {
-            callback(null, true); // Allow access
-        } else {
-            callback(new Error('Not allowed by CORS')); // Deny access
-        }
-    },
-    credentials: true, // Allow credentials like cookies
+    origin: ['https://admin.spexafrica.site','https://user.spexafrica.site','https://vendor.spexafrica.site','https://enterprise.spexafrica.site'], // Replace with your client URL
+    credentials: true,
 }));
 
 
