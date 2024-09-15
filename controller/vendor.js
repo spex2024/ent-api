@@ -9,6 +9,7 @@ import Agency from "../model/agency.js";
 import User from "../model/user.js";
 import Admin from "../model/admin.js";
 import Order from "../model/order.js";
+import {sendMail} from "../helper/mail.js";
 
 dotenv.config();
 
@@ -24,30 +25,41 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const URL = "https://main.d1tchh5v04pztk.amplifyapp.com";
+const URL = "https://vendor.spexafrica.site";
 // const verify = "https://enterprise-backend.vercel.app"
-const verify = "https://enterprise-backend-l6pn.onrender.com";
+const verify = "https://api.spexafrica.site";
 
-const sendVerificationEmail = (vendor, emailToken) => {
+const sendVerificationEmail = async (vendor, emailToken) => {
     const url = `${verify}/api/vendor/verify/${emailToken}`;
-    transporter.sendMail({
+    // transporter.sendMail({
+    //     to: vendor.email,
+    //     subject: 'Account Verification',
+    //     html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code} Click <a href="${url}">here</a> to verify your email.`,
+    // });
+
+    await sendMail({
         to: vendor.email,
-        subject: 'Account Verification',
-        html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code} Click <a href="${url}">here</a> to verify your email.`,
+        subject: 'Verify your email',
+        html: `Thanks for signing up on spex platform ,  Account ID: ${user.code}. Click <a href="${url}">here</a> to verify your email.`
     });
 };
-const sendSuccessEmail = (vendor) =>{
+const sendSuccessEmail = async (vendor) =>{
 
-    transporter.sendMail({
+    // transporter.sendMail({
+    //     to: vendor.email,
+    //     subject: 'Account Verification',
+    //     html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code}`,
+    // });
+    await sendMail({
         to: vendor.email,
         subject: 'Account Verification',
         html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code}`,
     });
 };
 
-const sendResetEmail = (vendor, resetToken) => {
+const sendResetEmail = async (vendor, resetToken) => {
     const url = `${URL}//reset/password-reset?token=${resetToken}`;
-    transporter.sendMail({
+    await sendMail({
         to: vendor.email,
         subject: 'Password Reset Request',
         html: `Click <a href="${url}">here</a> to reset your password.`,
@@ -147,7 +159,7 @@ export const createVendor = async (req, res) => {
             });
 
             const emailToken = generateToken({ vendorId: vendor._id, email: vendor.email }, '2m');
-            sendVerificationEmail(vendor, emailToken);
+            await sendVerificationEmail(vendor, emailToken);
 
             setTimeout(async () => {
                 try {
@@ -228,7 +240,7 @@ export const addVendor = async (req, res) => {
                 isVerified: true,
             });
 
-            sendSuccessEmail(vendor)
+            await sendSuccessEmail(vendor)
 
 
             res.status(200).json({ message: "Vendor registered successfully. Check your email for your Account ID" });
@@ -286,7 +298,7 @@ export const resendVerificationEmail = async (req, res) => {
         }
 
         const token = jwt.sign({ email: vendor.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        sendVerificationEmail(vendor, token);
+        await sendVerificationEmail(vendor, token);
 
         res.status(200).json({ message: 'Verification email sent successfully' });
     } catch (error) {
@@ -321,7 +333,7 @@ export const signIn = async (req, res) => {
         res.cookie('token', token, {
             domain: '.spexafrica.site',
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'none' in production, 'lax' otherwise
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
@@ -414,7 +426,7 @@ export const resetPasswordRequest = async (req, res) => {
         }
 
         const resetToken = generateToken({ vendorId: vendor._id, email: vendor.email }, '1h');
-        sendResetEmail(vendor, resetToken);
+        await sendResetEmail(vendor, resetToken);
 
         res.status(200).json({ message: 'Password reset email sent successfully' });
     } catch (error) {

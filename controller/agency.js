@@ -347,7 +347,7 @@ export const forgotAgencyPassword = async (req, res) => {
         agency.resetToken = resetToken;
         await agency.save();
 
-        sendResetEmail(agency, resetToken);
+        await sendResetEmail(agency, resetToken);
 
         res.status(200).json({ message: 'Password reset email sent' });
     } catch (error) {

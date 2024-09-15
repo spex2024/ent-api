@@ -410,7 +410,7 @@ export const requestPasswordReset = async (req, res) => {
         user.resetPasswordToken = resetToken;
         await user.save();
 
-        sendResetEmail(user, resetToken);
+        await sendResetEmail(user, resetToken);
 
         res.status(200).json({ message: 'Password reset link has been sent to your email.' });
     } catch (error) {
