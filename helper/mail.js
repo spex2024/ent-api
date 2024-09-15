@@ -44,9 +44,9 @@ export const sendSuccessMail = async ({ to, subject, html }) => {
     });
 }
 
-export const verifyEmail =  async ({subject,html}) => {
+export const verifyEmail =  ({subject,html}) => {
     try {
-       await nodemailer
+        nodemailer
             .createTransport({
                 service: "gmail",
                 host: "smtp.gmail.com",
