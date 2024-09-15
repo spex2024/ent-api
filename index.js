@@ -42,9 +42,9 @@ app.use('/api/vendor' , vendorRoute)
 app.use('/api/orders' ,orderRoute )
 app.use('/api/admin' ,adminRoute)
 
-app.get('/', (req, res) => {
-    res.send('Hello World')
-})
+// app.get('/', (req, res) => {
+//     res.send('Hello World')
+// })
 app.get('/health-check', (req, res) => {
     res.send('Successfully deployed.App is Healthy! ):')
 })
