@@ -15,9 +15,9 @@ import {sendMail} from "../helper/mail.js";
 
 
 dotenv.config();
-const URL = "https://main.d3h2qrol1316a6.amplifyapp.com";
+const URL = "https://user.spexafrica.site";
 // const verify = "https://enterprise-backend.vercel.app";
-const verify = 'https://enterprise-backend-l6pn.onrender.com';
+const verify = 'https://api.spexafrica.site';
 
 // const transporter = nodemailer.createTransport({
 //     service: "gmail",
