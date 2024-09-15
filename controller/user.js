@@ -163,7 +163,7 @@ export const signUp = async (req, res) => {
             // Generate email verification token
             const emailToken = generateToken({ userId: user._id, email: user.email }, '1h');
 
-            sendVerificationEmail(user, emailToken);
+            await sendVerificationEmail(user, emailToken);
             setTimeout(async () => {
                 try {
 
