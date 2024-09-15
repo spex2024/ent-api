@@ -45,6 +45,9 @@ app.use('/api/admin' ,adminRoute)
 app.get('/', (req, res) => {
     res.send('Hello World')
 })
+app.get('/health-check', (req, res) => {
+    res.send('Successfully deployed.App is Healthy! ):')
+})
 
 // Connect to MongoDB and start server
 // connectToMongoDB()
