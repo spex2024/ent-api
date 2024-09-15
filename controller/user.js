@@ -290,7 +290,7 @@ export const signIn = async (req, res) => {
         res.cookie('token', token, {
             domain: '.spexafrica.site',
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'stric', // Use 'none' in production, 'lax' otherwise
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
