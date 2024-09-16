@@ -175,7 +175,7 @@ export const createVendor = async (req, res) => {
             res.status(200).json({ message: "Vendor registered successfully. Please check your email for verification link." });
         } catch (error) {
             console.error(error);
-            res.status(500).json({ message: "Server error", error });
+            res.status(500).json({ message:error.message });
         }
     });
 };
@@ -246,7 +246,7 @@ export const addVendor = async (req, res) => {
             res.status(200).json({ message: "Vendor registered successfully. Check your email for your Account ID" });
         } catch (error) {
             console.error(error);
-            res.status(500).json({ message: "Server error", error });
+            res.status(500).json({ message:error.message });
         }
     });
 };
