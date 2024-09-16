@@ -303,7 +303,7 @@ export const resendVerificationEmail = async (req, res) => {
         res.status(200).json({ message: 'Verification email sent successfully' });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send('Server Error');
+        res.status(500).send({message:error.message});
     }
 };
 
@@ -431,7 +431,7 @@ export const resetPasswordRequest = async (req, res) => {
         res.status(200).json({ message: 'Password reset email sent successfully' });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send('Server Error');
+        res.status(500).send({message: error.message});
     }
 };
 
