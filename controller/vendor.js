@@ -40,7 +40,7 @@ const sendVerificationEmail = async (vendor, emailToken) => {
     await sendMail({
         to: vendor.email,
         subject: 'Verify your email',
-        html: `Thanks for signing up on spex platform ,  Account ID: ${user.code}. Click <a href="${url}">here</a> to verify your email.`
+        html: `Thanks for signing up on spex platform ,  Account ID: ${vendor.code}. Click <a href="${url}">here</a> to verify your email.`
     });
 };
 const sendSuccessEmail = async (vendor) =>{
