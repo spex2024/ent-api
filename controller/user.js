@@ -512,56 +512,100 @@ export const updateUserInfo = async (req, res) => {
     });
 };
 
+// export const deleteUser = async (req, res) => {
+//     const userId = req.params.userId;
+//     console.log(userId)
+//
+//     try {
+//         // Find the user by ID
+//         const user = await User.findById(userId).populate('orders').populate('pack');
+//
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+//
+//         if (user?.orders?.length > 0) {
+//             // Get vendor IDs from orders
+//             const vendorIds = [...new Set(user.orders.map(order => order.vendor))];
+//
+//             // Remove user's orders from each vendor
+//             await Promise.all(vendorIds.map(async (vendorId) => {
+//                 const vendor = await Vendor.findById(vendorId).exec();
+//
+//                 if (vendor) {
+//                     const updatedVendorOrders = vendor.orders.filter(orderId => !user.orders.some(order => order._id.equals(orderId)));
+//                     await Vendor.findByIdAndUpdate(vendorId, { orders: updatedVendorOrders }, { new: true }).exec();
+//                 }
+//             }));
+//
+//             // Delete associated orders
+//             await Order.deleteMany({ _id: { $in: user.orders.map(order => order._id) } });
+//         }
+//
+//         // Delete associated packs
+//         if (user.pack.length > 0) {
+//             await Pack.deleteMany({ _id: { $in: user.pack } });
+//         }
+//
+//         await PackRequest.deleteMany({ user: userId });
+//
+//         // Delete profile photo from Cloudinary if it exists
+//         if (user.imagePublicId) {
+//             await cloudinary.uploader.destroy(user.imagePublicId);
+//         }
+//
+//
+//
+//         // Delete the user
+//         await User.findByIdAndDelete(userId);
+//
+//         res.status(200).json({ message: 'User and associated data deleted successfully' });
+//     } catch (error) {
+//         console.error(error.message);
+//         res.status(500).json(error.message);
+//     }
+// };
+
+
+
 export const deleteUser = async (req, res) => {
     const userId = req.params.userId;
-    console.log(userId)
 
     try {
         // Find the user by ID
-        const user = await User.findById(userId).populate('orders').populate('pack');
-
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (user.orders.length > 0) {
-            // Get vendor IDs from orders
-            const vendorIds = [...new Set(user.orders.map(order => order.vendor))];
-
-            // Remove user's orders from each vendor
-            await Promise.all(vendorIds.map(async (vendorId) => {
-                const vendor = await Vendor.findById(vendorId).exec();
-
-                if (vendor) {
-                    const updatedVendorOrders = vendor.orders.filter(orderId => !user.orders.some(order => order._id.equals(orderId)));
-                    await Vendor.findByIdAndUpdate(vendorId, { orders: updatedVendorOrders }, { new: true }).exec();
-                }
-            }));
-
-            // Delete associated orders
-            await Order.deleteMany({ _id: { $in: user.orders.map(order => order._id) } });
-        }
-
-        // Delete associated packs
-        if (user.pack.length > 0) {
-            await Pack.deleteMany({ _id: { $in: user.pack } });
-        }
-
-        await PackRequest.deleteMany({ user: userId });
-
-        // Delete profile photo from Cloudinary if it exists
+        // Delete the user's profile photo from Cloudinary if it exists
         if (user.imagePublicId) {
             await cloudinary.uploader.destroy(user.imagePublicId);
         }
 
+        // Find and delete the user's orders
+        const orders = await Order.find({ user: userId });
+        await Order.deleteMany({ user: userId });
 
+        // Update vendors to remove the deleted user's orders
+        for (const order of orders) {
+            await Vendor.updateMany(
+                { _id: order.vendor },
+                { $pull: { orders: order._id } }
+            );
+        }
 
-        // Delete the user
+        // Optionally, delete related packs and pack requests
+        await Pack.deleteMany({ user: userId });
+        await PackRequest.deleteMany({ user: userId });
+
+        // Delete user record
         await User.findByIdAndDelete(userId);
 
-        res.status(200).json({ message: 'User and associated data deleted successfully' });
+        // Return success message
+        res.status(200).json({ message: 'User successfully deleted' });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json(error.message);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

@@ -17,7 +17,7 @@ router.post('/login', signIn);
 router.post('/register', signUp);
 router.get('/verify/:token', verifyEmail);
 router.post('/resend', resendVerificationEmail);
-router.get('/employees',authenticate,  getAllUsers);
+router.get('/employees',  getAllUsers);
 router.get('/employee', getCurrentUser);
 router.get('/vendor', authenticate, getVendor);
 router.get('/vendors', authenticate, getAllVendors);
