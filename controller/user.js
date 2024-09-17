@@ -294,8 +294,7 @@ export const signIn = async (req, res) => {
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
-        res.json({message: 'Login successful'
-        });
+        res.status(200).json({message: 'Login successful'});
     } catch (error) {
         console.error(error.message);
         res.status(500).send(error.message);
