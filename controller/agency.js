@@ -82,6 +82,19 @@ const generateUniqueCode = async (company, branch) => {
     return code;
 };
 
+const updateAgencyCode = (agencyCode, company, branch) => {
+    // Length of the numeric part (assumed to be 3 digits)
+    const numericPartLength = 3;
+    const initials = generateInitials(company, branch);
+    // Extract the numeric part from the vendorCode
+    const numericPart = agencyCode.slice(-numericPartLength); // Last 3 digits
+
+    // Reconstruct the updated vendor code
+    const updatedAgencyCode = `${initials}${numericPart}`;
+
+    return updatedAgencyCode;
+};
+
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
 };
@@ -392,7 +405,7 @@ export const updateAgencyProfile = async (req, res) => {
             return res.status(400).json({ message: "Multer error", error: err.message });
         }
 
-        const { company, branch, email , location } = req.body;
+        const { company, branch, email , location ,} = req.body;
         const profilePhoto = req.file;
 
         if (!company || !branch || !email) {
@@ -433,9 +446,12 @@ export const updateAgencyProfile = async (req, res) => {
                 agency.imageUrl = uploadedPhoto.secure_url;
                 agency.imagePublicId = uploadedPhoto.public_id;
             }
-
+             let code = agency.code
+              const newCode = updateAgencyCode(code,company,branch)
             agency.company = company;
             agency.branch = branch;
+            agency.location = location;
+            agency.code = newCode;
             await agency.save();
 
             res.status(200).json({ message: 'Profile updated successfully', agency });
