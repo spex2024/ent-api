@@ -13,6 +13,7 @@ import {
 } from "../../controller/agency.js";
 import authenticate from "../../middleware/protected.js";
 import extractUserId from "../../middleware/extract.js";
+import {getAllVendors} from "../../controller/vendor.js";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.post('/request', forgotAgencyPassword);
 router.post('/resend', resendVerificationEmail);
 router.get('/agencies', authenticate,getAllAgencies);
 router.get('/agency', authenticate ,getCurrentAgency );
+router.get('/vendors', authenticate ,getAllVendors );
 router.post('/add-vendor', authenticate ,addVendor );
 router.post('/vendor/disconnect', disconnectVendor);
 router.post('/employee/disconnect', disconnectUser);

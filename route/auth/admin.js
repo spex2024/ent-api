@@ -23,7 +23,7 @@ router.post('/reset', resetPassword);
 router.put('/update',authenticate, updateAdmin);
 router.delete('/update',authenticate, deleteAdmin);
 router.get('/users', getAllUsers);
-router.get('/vendors', authenticate, getAllVendors);
+router.get('/vendors',  getAllVendors);
 router.get('/users', getAllAgencies);
 router.get('/users', getAllOrders);
 router.get('/return-packs', getAllReturnedPacks);
