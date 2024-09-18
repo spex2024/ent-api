@@ -337,7 +337,14 @@ export const getAllOrders = async (req, res) => {
 // Controller to get all agencies
 export const getAllAgencies = async (req, res) => {
     try {
-        const agencies = await Agency.find(); // Adjust the path if you have an Agency model
+        const agencies = await Agency.find().populate({
+            path: 'users',
+            populate: {
+                path: 'orders',
+                populate: {
+                    path: 'vendor',
+                }
+        }})
         res.status(200).json(agencies);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching agencies', error });
