@@ -24,8 +24,8 @@ router.put('/update',authenticate, updateAdmin);
 router.delete('/update',authenticate, deleteAdmin);
 router.get('/users', getAllUsers);
 router.get('/vendors',  getAllVendors);
-router.get('/users', getAllAgencies);
-router.get('/users', getAllOrders);
+router.get('/agency', getAllAgencies);
+router.get('/orders', getAllOrders);
 router.get('/return-packs', getAllReturnedPacks);
 //
 // router.get('/profile', );
