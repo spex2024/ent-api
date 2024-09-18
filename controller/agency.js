@@ -7,12 +7,16 @@ import { v2 as cloudinary } from 'cloudinary';
 import upload from "../middleware/multer-upload.js";
 import Admin from "../model/admin.js";
 import User from "../model/user.js";
-import {Vendor} from "../model/vendor.js";
+import {Meal, Vendor} from "../model/vendor.js";
 import {sendMail} from "../helper/mail.js";
+import Order from "../model/order.js";
 dotenv.config();
 const URL = "https://enterprise.spexafrica.site";
 // const verify = "https://enterprise-backend.vercel.app";
 const verify = "https://api.spexafrica.site";
+
+
+
 const transporter = nodemailer.createTransport({
     service: "gmail",
     host: "smtp.gmail.com",
@@ -23,7 +27,6 @@ const transporter = nodemailer.createTransport({
         pass: process.env.APP,
     },
 });
-
 const sendVerificationEmail = async (agency, emailToken) => {
     const url = `${verify}/api/enterprise/verify/${emailToken}`;
     // transporter.sendMail({
@@ -39,7 +42,6 @@ const sendVerificationEmail = async (agency, emailToken) => {
     });
 
 };
-
 const sendResetEmail = async (agency, resetToken) => {
     const url = `${URL}/reset/password-reset?token=${resetToken}`;
     // transporter.sendMail({
@@ -53,7 +55,6 @@ const sendResetEmail = async (agency, resetToken) => {
         html: `Click <a href="${url}">here</a> to reset your password.`,
     });
 };
-
 // Function to generate initials from company and branch
 const generateInitials = (company, branch) => {
     const companyParts = company.split(' '); // Split company into parts by spaces
@@ -71,8 +72,6 @@ const generateInitials = (company, branch) => {
 
     return initials;
 };
-
-// Updated generateUniqueCode function to use initials
 const generateUniqueCode = async (company, branch) => {
     const initials = generateInitials(company, branch);
     let code;
@@ -81,7 +80,6 @@ const generateUniqueCode = async (company, branch) => {
     code = `${initials}${paddedCounter}`;
     return code;
 };
-
 const updateAgencyCode = (agencyCode, company, branch) => {
     // Length of the numeric part (assumed to be 3 digits)
     const numericPartLength = 3;
@@ -94,11 +92,9 @@ const updateAgencyCode = (agencyCode, company, branch) => {
 
     return updatedAgencyCode;
 };
-
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
 };
-
 export const agencySignUp = async (req, res) => {
     const uploadSingle = upload.single('profilePhoto');
     uploadSingle(req, res, async (err) => {
@@ -178,7 +174,6 @@ export const agencySignUp = async (req, res) => {
         }
     });
 };
-
 export const verifyAgencyEmail = async (req, res) => {
     const token = req.params.token;
 
@@ -214,7 +209,6 @@ export const verifyAgencyEmail = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
 export const resendVerificationEmail = async (req, res) => {
     const { email } = req.body;
 
@@ -241,7 +235,6 @@ export const resendVerificationEmail = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
 export const agencySignIn = async (req, res) => {
     const { email, password } = req.body;
 
@@ -285,7 +278,6 @@ export const agencySignIn = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
 export const getAllAgencies = async (req, res) => {
     try {
         // Fetch only verified agencies
@@ -306,8 +298,6 @@ export const getAllAgencies = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
-
 export const getCurrentAgency = async (req, res) => {
     const token = req.cookies.token;
 
@@ -342,7 +332,6 @@ export const getCurrentAgency = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
 export const forgotAgencyPassword = async (req, res) => {
     const { email } = req.body;
     try {
@@ -368,7 +357,6 @@ export const forgotAgencyPassword = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
 export const resetAgencyPassword = async (req, res) => {
     const { token, newPassword } = req.body;
 
@@ -396,9 +384,6 @@ export const resetAgencyPassword = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
-
-// Update vendor
 export const updateAgencyProfile = async (req, res) => {
     const uploadSingle = upload.single('profilePhoto');
     uploadSingle(req, res, async (err) => {
@@ -469,72 +454,43 @@ export const updateAgencyProfile = async (req, res) => {
         }
     });
 };
-
-export const updateAgencyPassword = async (req, res) => {
-    const { email, currentPassword, newPassword } = req.body;
-
-    if (!email || !currentPassword || !newPassword) {
-        return res.status(400).json({ message: 'Please fill in all required fields' });
-    }
+export const deleteAgency = async (req, res) => {
+    const { entId } = req.params;
 
     try {
-        const agency = await Agency.findOne({ email });
+        // Find the agency by ID
+        const agency = await Agency.findById(entId).populate('vendors').populate('users');
 
         if (!agency) {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        const isMatch = await bcrypt.compare(currentPassword, agency.password);
+        // 1. Disconnect users associated with the agency
+        await User.updateMany(
+            { agency: entId },
+            { $unset: { agency: "" } } // Remove the reference to the agency
+        );
 
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Incorrect current password' });
-        }
+        // 2. Disconnect vendors associated with the agency
+        await Vendor.updateMany(
+            { agencies: entId },
+            { $pull: { agencies: entId } } // Remove the agency from vendors
+        );
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        agency.password = hashedPassword;
-        await agency.save();
-
-        res.status(200).json({ message: 'Password updated successfully' });
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
-    }
-};
-
-export const deleteAgencyAccount = async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Please fill in all required fields' });
-    }
-
-    try {
-        const agency = await Agency.findOne({ email });
-
-        if (!agency) {
-            return res.status(404).json({ message: 'Agency not found' });
-        }
-
-        const isMatch = await bcrypt.compare(password, agency.password);
-
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Incorrect password' });
-        }
-
-        // Delete profile photo from Cloudinary
+        // 4. Optionally, delete the agency's profile photo from Cloudinary (if it exists)
         if (agency.imagePublicId) {
             await cloudinary.uploader.destroy(agency.imagePublicId);
         }
 
-        await agency.remove();
+        // 5. Finally, delete the agency itself
+        await Agency.findByIdAndDelete(entId);
 
-        res.status(200).json({ message: 'Agency account deleted successfully' });
+        res.status(200).json({ message: 'Enterprise and its associations deleted successfully' });
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
+        console.error(error);
+        res.status(500).json({ message: error.message });
     }
 };
-
 export const signOut = (req, res) => {
     try {
         res.clearCookie('token', {
@@ -607,8 +563,6 @@ export const addVendor = async (req, res) => {
         return res.status(500).json({ message: 'Error updating vendors and enterprise', error });
     }
 };
-
-
 export const disconnectVendor = async (req, res) => {
     const { userId, vendorId } = req.body; // Extract agency ID (userId) and vendor ID from request body
 
