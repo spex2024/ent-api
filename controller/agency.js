@@ -398,6 +398,7 @@ export const resetAgencyPassword = async (req, res) => {
 };
 
 
+// Update vendor
 export const updateAgencyProfile = async (req, res) => {
     const uploadSingle = upload.single('profilePhoto');
     uploadSingle(req, res, async (err) => {
@@ -405,30 +406,45 @@ export const updateAgencyProfile = async (req, res) => {
             return res.status(400).json({ message: "Multer error", error: err.message });
         }
 
-        const { company, branch, email , location ,} = req.body;
+        const { company, email, phone, location  ,branch} = req.body;
         const profilePhoto = req.file;
-
-        if (!company || !branch || !email) {
-            return res.status(400).json({ message: "Please fill in all required fields" });
-        }
-
+        const agencyId = req.params.entId;
         try {
-            const agency = await Agency.findOne({ email });
-            if (!agency) {
-                return res.status(404).json({ message: 'Agency not found' });
+            // Find the vendor by ID
+            const agency = await Agency.findById(agencyId);
+            if (!agency) return res.status(404).json({ message: "Vendor not found" });
+
+            // Check if email or phone already exists for another vendor, agency, or admin
+            const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+            const existingVendor = await Vendor.findOne({ $or: [{ email }, { phone }] });
+            const existingAdmin = await Admin.findOne({ $or: [{ email }, { phone }] });
+
+            if (existingUser || existingVendor || existingAdmin ) {
+                return res.status(400).json({ message: "Email or phone already in use by another account" });
             }
 
+            if (company || branch|| phone || email || location) {
+                agency.company= company|| agency.company;
+                agency.location = location|| agency.location;
+                agency.phone = phone || agency.phone;
+                agency.email = email || agency.email;
+                agency.branch = branch || agency.branch;
+            }
+
+            // Update vendor code based on the new first and last names
+            agency.code = updateAgencyCode(agency.code, company, branch);
+
+            // Handle profile photo update
             if (profilePhoto) {
-                // Upload new profile photo to Cloudinary
+                // Delete old image from Cloudinary if it exists
+                if (agency.imagePublicId) {
+                    await cloudinary.uploader.destroy(agency.imagePublicId);
+                }
+
+                // Upload new image to Cloudinary
                 const uploadedPhoto = await new Promise((resolve, reject) => {
                     cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'agency',
-                            transformation: [
-                                { quality: 'auto', fetch_format: 'auto' },
-                                { crop: 'fill', gravity: 'auto', width: 500, height: 600 }
-                            ]
-                        },
+                        { folder: 'vendors', transformation: [{ crop: 'fill', width: 500, height: 600 }] },
                         (error, result) => {
                             if (error) {
                                 return reject(error);
@@ -438,26 +454,18 @@ export const updateAgencyProfile = async (req, res) => {
                     ).end(profilePhoto.buffer);
                 });
 
-                // Delete old profile photo from Cloudinary
-                if (agency.imagePublicId) {
-                    await cloudinary.uploader.destroy(agency.imagePublicId);
-                }
-
+                // Update vendor with new image details
                 agency.imageUrl = uploadedPhoto.secure_url;
                 agency.imagePublicId = uploadedPhoto.public_id;
             }
-             let code = agency.code
-              const newCode = updateAgencyCode(code,company,branch)
-            agency.company = company;
-            agency.branch = branch;
-            agency.location = location;
-            agency.code = newCode;
-            await agency.save();
 
-            res.status(200).json({ message: 'Profile updated successfully', agency });
+            // Save updated vendor
+            await agency.save();
+            res.status(200).json({ message: "Agency updated successfully" });
+
         } catch (error) {
             console.error(error.message);
-            res.status(500).send('Server Error');
+            res.status(500).json({ message: error.message });
         }
     });
 };
