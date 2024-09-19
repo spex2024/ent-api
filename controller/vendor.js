@@ -478,7 +478,6 @@ export const updateVendor = async (req, res) => {
             const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
             const existingAgency = await Agency.findOne({ $or: [{ email }, { phone }] });
             const existingAdmin = await Admin.findOne({ $or: [{ email }, { phone }] });
-            console.log(company,existingAgency, vendor)
 
             if (existingUser || existingAgency ) {
                 return res.status(400).json({ message: "Email or phone already in use by another account" });
