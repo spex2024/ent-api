@@ -382,25 +382,32 @@ export const getCurrentVendor = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-// Get vendors shared with the current user's agencies
 export const getSharedVendors = async (req, res) => {
     try {
         const user = req.user; // Assume the user is attached to the request
-
 
         if (!user) {
             return res.status(401).json({ message: 'Unauthorized access' });
         }
 
-        // Get the agencies the current user is associated with
-        const userAgencies = user.agency;
+        // Get the user's agency or agencies
+        let userAgencies = user.agency;
 
-        // Find vendors that share at least one agency with the user
+        // If userAgencies is not an array, convert it to an array
+        if (!Array.isArray(userAgencies)) {
+            userAgencies = [userAgencies];
+        }
+
+        // Find vendors that belong to any of the user's agencies
         const sharedVendors = await Vendor.find({
-            agencies: { $in: userAgencies }
-        }).populate({path:'meals', populate:'vendor'});
+            agencies: { $in: userAgencies }  // Query vendors with matching agencies
+        })
+            .populate({
+                path: 'meals',  // This ensures you're populating the 'meals' field
+                model: 'Meal'   // Make sure this is the correct model name in your app
+            });
 
-        // Extract the required information
+        // Map the vendor data along with their populated meals
         const result = sharedVendors.map(vendor => ({
             vendorName: vendor.name,
             vendorLocation: vendor.location,
@@ -413,6 +420,10 @@ export const getSharedVendors = async (req, res) => {
         res.status(500).send(error.message);
     }
 };
+
+
+
+
 
 // Reset password request
 export const resetPasswordRequest = async (req, res) => {

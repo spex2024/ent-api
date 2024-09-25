@@ -321,7 +321,20 @@ export const getCurrentUser = async (req, res) => {
     try {
         // Verify the JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.user.id).populate('agency').populate('orders').populate('pack');
+        const user = await User.findById(decoded.user.id).populate({
+            path : 'agency',
+            populate :{
+                path:'vendors',
+                populate:{
+                    path:'meals',
+                    populate :{
+                        path:'vendor',
+                    }
+
+                }
+
+            }
+        }).populate('orders').populate('pack');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
