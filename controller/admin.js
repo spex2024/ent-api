@@ -345,6 +345,7 @@ export const getAllAgencies = async (req, res) => {
                     path: 'vendor',
                 }
         }})
+
         res.status(200).json(agencies);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching agencies', error });
