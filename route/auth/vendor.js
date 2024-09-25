@@ -33,7 +33,7 @@ router.post('/logout',signOut)// Route for vendor login
 router.put('/update/:vendorId', updateVendor);             // Route for updating vendor details
 router.get('/vendor',authenticateVendor, getCurrentVendor); // Route for fetching vendors by agency
 router.get('/:vendorId', getVendor);
-router.get('/meal',attachUser, getSharedVendors); // Route for fetching vendors by agency
+router.get('/meal',authenticate, getSharedVendors); // Route for fetching vendors by agency
 router.get('/verify/:token', verifyEmail); // Route for fetching vendors by agency
 router.delete('/:vendorId', deleteVendor); // Route for fetching vendors by agency
 
