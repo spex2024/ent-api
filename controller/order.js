@@ -191,3 +191,55 @@ export const cancelOrder = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const deleteOrder = async (req, res) => {
+    try {
+        const orderId  = req.params.id;
+
+        // Find the order by its ID
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Check the status of the order
+        const { status } = order;
+
+        // Find the vendor associated with the order
+        const vendor = await Vendor.findById(order.vendor);
+        if (vendor) {
+            // Update vendor's completed or canceled orders count based on status
+            if (status === 'completed') {
+                vendor.completedOrders -= 1; // Decrement completed orders count
+            } else if (status === 'cancelled') {
+                vendor.canceledOrders -= 1; // Decrement canceled orders count
+            }
+            await vendor.save(); // Save the vendor updates
+        }
+
+        // Find the user associated with the order
+        const user = await User.findById(order.user);
+        if (user) {
+            // Update the user's activePack if the order was completed or canceled
+            if (status === 'completed' || status === 'cancelled') {
+                user.activePack = Math.max(0, (user.activePack || 0) - 1); // Decrement active pack, ensuring it doesn't go negative
+                await user.save(); // Save the user updates
+            }
+        }
+
+        // Remove the order from the user's orders array
+        await User.findByIdAndUpdate(order.user, { $pull: { orders: orderId } });
+
+        // Remove the order from the vendor's orders array
+        await Vendor.findByIdAndUpdate(order.vendor, { $pull: { orders: orderId } });
+
+        // Delete the order from the database
+        await Order.findByIdAndDelete(orderId);
+
+        res.status(200).json({ message: 'Order deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
