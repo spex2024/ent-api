@@ -17,7 +17,7 @@ export const placeOrder = async (req, res) => {
         const { cart: meals, totalPrice, totalQuantity } = req.body;
 
         // Get the user token from cookies and decode it to retrieve user info
-        const token = req.cookies.token; // Assuming user ID is stored in cookies
+        const token = req.cookies.user; // Assuming user ID is stored in cookies
         const decode = jwt.decode(token, process.env.JWT_SECRET);
         const user = decode.user.id; // Extract user ID
 
