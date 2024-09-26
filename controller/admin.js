@@ -242,7 +242,7 @@ export const getAllAdmins = async (req, res) => {
 };
 
 export const getCurrentAdmin = async (req, res) => {
-    const token = req.cookies.token;
+    const token = req.cookies.admin;
 
     if (!token) {
         return res.status(401).json({ message: "No token provided, please sign in" });
