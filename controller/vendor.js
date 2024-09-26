@@ -347,7 +347,7 @@ export const signIn = async (req, res) => {
 
 // Get current vendor
 export const getCurrentVendor = async (req, res) => {
-    const token = req.cookies.token;
+    const token = req.cookies.vendor;
 
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized access' });
