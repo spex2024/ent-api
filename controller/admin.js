@@ -130,8 +130,6 @@ export const signIn = async (req, res) => {
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
-        verifyEmail({subject: 'Sign Up Success',
-            html: `<p>Login successful</p>`,})
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
         console.error(error.message);
