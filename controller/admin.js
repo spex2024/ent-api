@@ -140,7 +140,7 @@ export const signIn = async (req, res) => {
 };
 
 export const signOut = (req, res) => {
-    res.cookie('token', '', {
+    res.cookie('admin', '', {
         domain: '.spexafrica.site',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
