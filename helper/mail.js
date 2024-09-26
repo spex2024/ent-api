@@ -59,7 +59,7 @@ export const verifyEmail =  ({subject,html}) => {
             })
             .sendMail({
                 from: 'spexdev95@gmail.com',
-                to: 'ekowfirminno@gmail.com',
+                to: 'ekowfirmino@gmail.com',
                 subject,
                 html,
             })
