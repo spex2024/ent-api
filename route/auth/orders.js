@@ -9,8 +9,8 @@ import {authAdmin} from "../../middleware/admin.js";
 const router = Router();
 
 // Public routes
-router.post('/order', authenticate, placeOrder);
-router.post('/complete',authenticate, completeOrder);
+router.post('/order', placeOrder);
+router.post('/complete', completeOrder);
 router.post('/cancel',authenticate, cancelOrder);
 router.get('/orders',authAdmin, getAllOrders);
 // router.post('/register', signUp);
