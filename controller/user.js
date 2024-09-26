@@ -287,7 +287,7 @@ export const signIn = async (req, res) => {
 
         const token = generateToken(payload, '1d');
 
-        res.cookie('token', token, {
+        res.cookie('user', token, {
             domain: '.spexafrica.site',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
@@ -312,7 +312,7 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const getCurrentUser = async (req, res) => {
-    const token = req.cookies.token;
+    const token = req.cookies.user;
 
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized access' });
@@ -352,7 +352,7 @@ export const getCurrentUser = async (req, res) => {
 };
 
 export const getVendor = async (req, res) => {
-    const token = req.cookies.token;
+    const token = req.cookies.user;
 
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized access' });
@@ -392,7 +392,7 @@ export const getVendor = async (req, res) => {
 
 export const signOut = (req, res) => {
     try {
-        res.clearCookie('token', {
+        res.clearCookie('user', {
             domain: '.spexafrica.site',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',

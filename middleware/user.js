@@ -2,8 +2,8 @@ import jwt from 'jsonwebtoken';
 import User from "../model/user.js";
 
 
-const attachUser = async (req, res, next) => {
-    const token = req.cookies.token;
+const authUser = async (req, res, next) => {
+    const token = req.cookies.user;
 
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized access' });
@@ -18,7 +18,6 @@ const attachUser = async (req, res, next) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        console.log(user)
 
         req.user = user;
         next();
@@ -28,4 +27,4 @@ const attachUser = async (req, res, next) => {
     }
 };
 
-export default attachUser;
+export default authUser;
