@@ -11,82 +11,95 @@ const generateOrderId = () => {
     return `ORD-${randomStr}`;
 };
 
+
 export const placeOrder = async (req, res) => {
     try {
-        // Destructure the cart, totalPrice, and totalQuantity from the request body
-        const { cart: meals, totalPrice, totalQuantity } = req.body;
+        // Destructure the meal and options from the request body
+        const { meal, options } = req.body;
+
 
         // Get the user token from cookies and decode it to retrieve user info
-        const token = req.cookies.user; // Assuming user ID is stored in cookies
-        const decode = jwt.decode(token, process.env.JWT_SECRET);
-        const user = decode.user.id; // Extract user ID
+        const token = req.cookies.user; // Assuming user token is stored in cookies
+        const decoded = jwt.decode(token, process.env.JWT_SECRET);
+        const userId = decoded?.user?.id; // Extract user ID
+        // Check for existing orders
+        const currentTime = new Date();
+        const sixAMNextDay = new Date();
+        sixAMNextDay.setHours(6, 0, 0, 0); // Set time to 6 AM
+        sixAMNextDay.setDate(sixAMNextDay.getDate() + 1); // Move to the next day
 
-        // If user is not authenticated, return a 401 error
-        if (!user) {
+        const existingOrders = await Order.find({
+            user: userId,
+            $or: [
+                { status: 'Pending' },
+                {
+                    status: 'Completed',
+                    createdAt: {
+                        $gte: new Date(currentTime.setHours(0, 0, 0, 0)), // Today
+                        $lt: sixAMNextDay, // Until 6 AM the next day
+                    },
+                },
+            ],
+        });
+        if (existingOrders.length > 0) {
+            return res.json({ message: 'You cannot place a new order until the next day' });
+        }
+
+        if (!userId) {
             return res.status(401).json({ message: 'User not authenticated' });
         }
 
-        // Validate the meals array, ensuring it's not empty
-        if (!meals || meals.length === 0) {
-            return res.status(400).json({ message: 'No meals provided' });
+        // Validate meal and options
+        if (!meal || !options) {
+            return res.status(400).json({ message: 'Meal and options are required.' });
         }
 
-        // Extract meal IDs from the cart and find corresponding meal records
-        const mealIds = meals.map(meal => meal.mealId);
-        const foundMeals = await Meal.find({ '_id': { $in: mealIds } }).populate('vendor');
-
-        // Extract meal images to store in the order
-        const image = foundMeals.map((meal) => ({
-            photo: meal.imageUrl
-        }));
-
-        // If no meals are found, return a 404 error
-        if (!foundMeals) {
-            return res.status(404).json({ message: 'One or more meals not found' });
+        // Extract vendor ID from the meal object
+        const vendorId = meal.vendor;
+        if (!vendorId) {
+            return res.status(400).json({ message: 'Vendor information is missing.' });
         }
 
-        // Retrieve the vendor from the first meal (assuming all meals belong to one vendor)
-        const vendor = foundMeals[0].vendor;
 
-        // If no vendor is found, return a 404 error
-        if (!vendor) {
-            return res.status(404).json({ message: 'Vendor not found for the meal' });
-        }
 
-        // Ensure all meals belong to the same vendor
-        for (const meal of foundMeals) {
-            if (meal.vendor._id.toString() !== vendor._id.toString()) {
-                return res.status(400).json({ message: 'Meals do not belong to the same vendor' });
-            }
-        }
+
+        // Construct the meals array based on the provided meal and options
+        const meals = [{
+            mealId: meal.id,
+            main: meal.main,
+            price: meal.price,
+            protein: options.protein,
+            sauce: options.sauce || '', // Sauce can be optional
+            extras: options.extras || '', // Extras can also be optional
+        }];
 
         // Generate a custom order ID
         const customOrderId = generateOrderId();
 
-        // Create a new order in the database
+        // Create the new order in the database
         const order = await Order.create({
             orderId: customOrderId,
-            user: user,
-            vendor: vendor._id,
+            user: userId,
+            vendor: vendorId,
             meals,
-            totalPrice,
-            totalQuantity,
-            imageUrl: image[0]?.photo
+            imageUrl: meal.imageUrl,
+            quantity: meal.quantity, // Assuming default quantity is 1, can be adjusted based on your requirements
         });
-
+       console.log(order)
         // Push the order to the user's orders array
-        await User.findByIdAndUpdate(user, { $push: { orders: order._id } });
+        await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
 
         // Push the order to the vendor's orders array
-        await Vendor.findByIdAndUpdate(vendor._id, { $push: { orders: order._id } });
+        await Vendor.findByIdAndUpdate(vendorId, { $push: { orders: order._id } });
 
         // Return the created order
-        res.status(201).json({message:"Order Successfully placed"});
+        return res.status(201).json({ message: 'Order successfully placed', order });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        return res.json({ message: error.message });
     }
 };
+
 
 export const completeOrder = async (req, res) => {
     try {
@@ -164,6 +177,7 @@ export const completeOrder = async (req, res) => {
 export const cancelOrder = async (req, res) => {
     try {
         const { orderId } = req.body;
+        console.log(orderId)
 
         // Find the order by its ID
         const order = await Order.findById(orderId);
@@ -243,3 +257,28 @@ export const deleteOrder = async (req, res) => {
     }
 };
 
+export const getOrdersByUserId = async (req, res) => {
+    try {
+        // Get the user token from cookies and decode it to retrieve user info
+        const token = req.cookies.user; // Assuming user token is stored in cookies
+        const decoded = jwt.decode(token, process.env.JWT_SECRET);
+        const userId = decoded?.user?.id; // Extract user ID
+
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
+        // Find all orders associated with the user
+        const orders = await Order.find({ user: userId }).populate('vendor meals'); // Populate vendor and meals if needed
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'No orders found for this user' });
+        }
+
+        // Return the orders
+        return res.status(200).json({ message: 'Orders retrieved successfully', orders });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
+    }
+};

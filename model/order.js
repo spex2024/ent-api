@@ -21,7 +21,6 @@ const orderSchema = new Schema({
     }],
     imageUrl: { type: String , required: true },
     quantity: { type: Number, required: true, default: 1 },
-    totalPrice: { type: Number, required: true },
     status: { type: String, required: true, default: 'Pending' }, // e.g., Pending, Completed, Canceled
 }, { timestamps: true });
 

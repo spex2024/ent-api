@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import {cancelOrder, completeOrder, deleteOrder, placeOrder} from "../../controller/order.js";
+import {cancelOrder, completeOrder, deleteOrder, getOrdersByUserId, placeOrder} from "../../controller/order.js";
 import authenticate from "../../middleware/protected.js";
 import {getAllOrders} from "../../controller/admin.js";
 import {authAdmin} from "../../middleware/admin.js";
@@ -12,7 +12,8 @@ const router = Router();
 // Public routes
 router.post('/order', authUser, placeOrder);
 router.post('/complete',authUser, completeOrder);
-router.post('/cancel',authenticate, cancelOrder);
+router.post('/cancel',authUser, cancelOrder);
+router.get('/user',authUser, getOrdersByUserId);
 router.get('/orders',authAdmin, getAllOrders);
 router.delete('/:id', deleteOrder);
 // router.post('/register', signUp);
