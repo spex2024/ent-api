@@ -81,7 +81,7 @@ export const placeOrder = async (req, res) => {
         await Vendor.findByIdAndUpdate(vendor._id, { $push: { orders: order._id } });
 
         // Return the created order
-        res.status(201).json(order);
+        res.status(201).json({message:"Order Successfully placed"});
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
