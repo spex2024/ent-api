@@ -40,20 +40,19 @@ export const placeOrder = async (req, res) => {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
-        // Get the current date at 23:59:59
+        // Get the current date at 23:59:5
         const endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
-        // Check for existing orders for today
-        const existingOrders = await Order.find({
+        const existingCompletedOrder = await Order.find({
             user: userId,
+            status: 'Completed',
             createdAt: { $gte: startOfDay, $lte: endOfDay },
-            status: 'Completed', // Check for completed orders
         });
 
-        // If there is an existing completed order, do not allow a new order
-        if (existingOrders.length > 0) {
-            return res.json({ message: 'You cannot place a new order until the next day.' });
+        console.log(existingCompletedOrder);
+        if (existingCompletedOrder) {
+            return res.status(400).json({ message: 'You have already placed a completed order today.' });
         }
 
         // Check for pending orders (if you want to keep this functionality)
