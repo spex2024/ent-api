@@ -30,20 +30,17 @@ export const placeOrder = async (req, res) => {
 
         const existingOrders = await Order.find({
             user: userId,
-            $or: [
-                { status: 'Pending' },
-                {
-                    status: 'Completed',
-                    createdAt: {
-                        $gte: new Date(currentTime.setHours(0, 0, 0, 0)), // Today
-                        $lt: sixAMNextDay, // Until 6 AM the next day
-                    },
-                },
-            ],
+            status: { $in: ['Pending', 'Completed'] },
+            createdAt: {
+                $gte: new Date(currentTime.setHours(0, 0, 0, 0)), // Today
+                $lt: sixAMNextDay, // Until 6 AM the next day
+            },
         });
+
         if (existingOrders.length > 0) {
             return res.json({ message: 'You cannot place a new order until the next day' });
         }
+
 
         if (!userId) {
             return res.status(401).json({ message: 'User not authenticated' });
