@@ -14,34 +14,13 @@ const generateOrderId = () => {
 
 export const placeOrder = async (req, res) => {
     try {
-        // Destructure the meal and options from the request body
         const { meal, options } = req.body;
 
-
-        // Get the user token from cookies and decode it to retrieve user info
         const token = req.cookies.user; // Assuming user token is stored in cookies
         const decoded = jwt.decode(token, process.env.JWT_SECRET);
         const userId = decoded?.user?.id; // Extract user ID
-        // Check for existing orders
-        const currentTime = new Date();
-        const sixAMNextDay = new Date();
-        sixAMNextDay.setHours(6, 0, 0, 0); // Set time to 6 AM
-        sixAMNextDay.setDate(sixAMNextDay.getDate() + 1); // Move to the next day
 
-        const existingOrders = await Order.find({
-            user: userId,
-            status: { $in: ['Pending', 'Completed'] },
-            createdAt: {
-                $gte: new Date(currentTime.setHours(0, 0, 0, 0)), // Today
-                $lt: sixAMNextDay, // Until 6 AM the next day
-            },
-        });
-
-        if (existingOrders.length > 0) {
-            return res.json({ message: 'You cannot place a new order until the next day' });
-        }
-
-
+        // Check if the user is authenticated
         if (!userId) {
             return res.status(401).json({ message: 'User not authenticated' });
         }
@@ -57,8 +36,34 @@ export const placeOrder = async (req, res) => {
             return res.status(400).json({ message: 'Vendor information is missing.' });
         }
 
+        // Get the current date at 00:00:00
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
 
+        // Get the current date at 23:59:59
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
 
+        // Check for existing orders for today
+        const existingOrders = await Order.find({
+            user: userId,
+            createdAt: { $gte: startOfDay, $lte: endOfDay },
+            status: 'Completed', // Check for completed orders
+        });
+
+        // If there is an existing completed order, do not allow a new order
+        if (existingOrders.length > 0) {
+            return res.json({ message: 'You cannot place a new order until the next day.' });
+        }
+
+        // Check for pending orders (if you want to keep this functionality)
+        const pendingOrders = await Order.find({
+            user: userId,
+            status: 'Pending',
+        });
+        if (pendingOrders.length > 0) {
+            return res.json({ message: 'You cannot place a new order until pending orders are completed.' });
+        }
 
         // Construct the meals array based on the provided meal and options
         const meals = [{
@@ -66,8 +71,8 @@ export const placeOrder = async (req, res) => {
             main: meal.main,
             price: meal.price,
             protein: options.protein,
-            sauce: options.sauce || '', // Sauce can be optional
-            extras: options.extras || '', // Extras can also be optional
+            sauce: options.sauce || '',
+            extras: options.extras || '',
         }];
 
         // Generate a custom order ID
@@ -80,9 +85,9 @@ export const placeOrder = async (req, res) => {
             vendor: vendorId,
             meals,
             imageUrl: meal.imageUrl,
-            quantity: meal.quantity, // Assuming default quantity is 1, can be adjusted based on your requirements
+            quantity: meal.quantity || 1, // Assuming default quantity is 1
         });
-       console.log(order)
+
         // Push the order to the user's orders array
         await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
 
@@ -93,9 +98,10 @@ export const placeOrder = async (req, res) => {
         return res.status(201).json({ message: 'Order successfully placed', order });
     } catch (error) {
         console.error(error);
-        return res.json({ message: error.message });
+        return res.status(500).json({ message: error.message });
     }
 };
+
 
 
 export const completeOrder = async (req, res) => {
