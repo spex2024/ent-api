@@ -120,11 +120,12 @@ export const completeOrder = async (req, res) => {
         if (!vendor) {
             return res.status(404).json({ message: 'Vendor not found' });
         }
+         const price = order.meals.map(meal => meal.price)
 
         // Update vendor's completed orders count and sales totals
         vendor.completedOrders += 1;
-        vendor.totalSales += order.totalPrice;  // Assuming vendor schema has totalSales
-        vendor.totalAmount += order.totalPrice;  // Assuming vendor schema has totalAmount
+        vendor.totalSales += price// Assuming vendor schema has totalSales
+        vendor.totalAmount += price  // Assuming vendor schema has totalAmount
         await vendor.save();
 
         // Retrieve the user associated with the order and populate their agency info

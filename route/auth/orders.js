@@ -11,7 +11,7 @@ const router = Router();
 
 // Public routes
 router.post('/order', authUser, placeOrder);
-router.post('/complete',authUser, completeOrder);
+router.post('/complete',authAdmin, completeOrder);
 router.post('/cancel',authUser, cancelOrder);
 router.get('/user',authUser, getOrdersByUserId);
 router.get('/orders',authAdmin, getAllOrders);
