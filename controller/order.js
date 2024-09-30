@@ -46,23 +46,27 @@ export const placeOrder = async (req, res) => {
 
         const existingCompletedOrder = await Order.find({
             user: userId,
-            status: 'Completed',
+            status: 'completed',
             createdAt: { $gte: startOfDay, $lte: endOfDay },
         });
 
-        console.log(existingCompletedOrder);
-        if (existingCompletedOrder) {
+
+        if (existingCompletedOrder.length > 0) {
             return res.status(400).json({ message: 'You have already placed a completed order today.' });
         }
 
         // Check for pending orders (if you want to keep this functionality)
         const pendingOrders = await Order.find({
             user: userId,
-            status: 'Pending',
+            status: 'pending',
         });
+
+
+
         if (pendingOrders.length > 0) {
             return res.json({ message: 'You cannot place a new order until pending orders are completed.' });
         }
+
 
         // Construct the meals array based on the provided meal and options
         const meals = [{
@@ -83,6 +87,7 @@ export const placeOrder = async (req, res) => {
             user: userId,
             vendor: vendorId,
             meals,
+            status:'pending',
             imageUrl: meal.imageUrl,
             quantity: meal.quantity || 1, // Assuming default quantity is 1
         });
@@ -122,12 +127,14 @@ export const completeOrder = async (req, res) => {
         if (!vendor) {
             return res.status(404).json({ message: 'Vendor not found' });
         }
-         const price = order.meals.map(meal => meal.price)
+
+        // Sum the prices of all meals in the order
+        const totalPrice = order.meals.reduce((sum, meal) => sum + meal.price, 0);
 
         // Update vendor's completed orders count and sales totals
         vendor.completedOrders += 1;
-        vendor.totalSales += price// Assuming vendor schema has totalSales
-        vendor.totalAmount += price  // Assuming vendor schema has totalAmount
+        vendor.totalSales += totalPrice; // Assuming vendor schema has totalSales
+        vendor.totalAmount += totalPrice;  // Assuming vendor schema has totalAmount
         await vendor.save();
 
         // Retrieve the user associated with the order and populate their agency info

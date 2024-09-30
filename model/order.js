@@ -21,7 +21,7 @@ const orderSchema = new Schema({
     }],
     imageUrl: { type: String , required: true },
     quantity: { type: Number, required: true, default: 1 },
-    status: { type: String, required: true, default: 'Pending' }, // e.g., Pending, Completed, Canceled
+    status: { type: String, required: true, default: 'pending' }, // e.g., Pending, Completed, Canceled
 }, { timestamps: true });
 
 // Create Order model
