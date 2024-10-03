@@ -177,3 +177,29 @@ export const getMealById = async (req, res) => {
         res.status(500).json({ message: err });
     }
 };
+
+export const deleteMealById = async (req, res) => {
+    try {
+        const mealId = req.params.id;
+
+        // Find the meal by ID
+        const meal = await Meal.findById(mealId);
+        if (!meal) {
+            return res.status(404).json({ message: 'Meal not found' });
+        }
+
+        // Remove the meal from the associated vendor's meal list
+        const vendorId = meal.vendor;
+        if (vendorId) {
+            await Vendor.findByIdAndUpdate(vendorId, { $pull: { meals: mealId } });
+        }
+
+        // Delete the meal from the database
+        await Meal.findByIdAndDelete(mealId);
+
+        res.status(200).json({ message: 'Meal deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting meal:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

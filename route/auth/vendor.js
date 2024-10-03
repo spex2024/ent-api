@@ -15,7 +15,7 @@ import {
     addVendor, deleteVendor, getVendor
 } from "../../controller/vendor.js"; // Ensure all necessary methods are imported
 import {
-    createMeal,
+    createMeal, deleteMealById,
     getAllMeals, getMealById, updateMeal
 } from "../../controller/meal.js";
 import authenticate from "../../middleware/protected.js";
@@ -33,7 +33,7 @@ router.post('/logout',signOut)// Route for vendor login
 router.put('/update/:vendorId', updateVendor);             // Route for updating vendor details
 router.get('/vendor',authenticateVendor, getCurrentVendor); // Route for fetching vendors by agency
 router.get('/:vendorId', getVendor);
-router.get('/meal',attachUser, getSharedVendors); // Route for fetching vendors by agency
+// router.get('/meal',attachUser, getSharedVendors); // Route for fetching vendors by agency
 router.get('/verify/:token', verifyEmail); // Route for fetching vendors by agency
 router.delete('/:vendorId', deleteVendor); // Route for fetching vendors by agency
 
@@ -44,9 +44,10 @@ router.post('/resend', resendVerificationEmail); // Resend verification email
 
 // Meal Routes
 router.post('/add-meal', authenticateVendor, createMeal);                        // Route for creating a new meal
-router.get('/meals', getAllMeals);
+router.get('/meals',authenticateVendor, getAllMeals);
 router.put('/meal/:id', authenticateVendor, updateMeal);
 router.get('/meal/:id', authenticateVendor, getMealById);
+router.delete('/meal/:id', authenticateVendor, deleteMealById);
 // Route for getting all meals
 
 export default router;

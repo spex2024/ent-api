@@ -361,14 +361,20 @@ export const getCurrentVendor = async (req, res) => {
                 path:'users',
                 populate:{
                     path: 'orders',
-                    populate:'user'
+                    populate:[{path:'user'},{path:'vendor'}],
                 }
             }}).populate({
             path:'orders',
-            populate : {
+            populate : [{
                 path: 'user',
                 populate:'agency'
+            },{
+                path: 'vendor',
             }
+            ]
+
+
+
         });
 
         if (!vendor) {
