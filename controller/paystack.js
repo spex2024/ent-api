@@ -89,8 +89,8 @@ export const recordPayment = async (req, res) => {
         // Update the agency with the new subscription and recalculated packs
         agency.subscription = newSubscription._id; // Link new subscription to agency
         agency.issuedPack= userPacks
-        agency.packs = numberOfPacks
-        agency.availablePacks = availablePacks
+        agency.packs = availablePacks
+
         await agency.save(); // Save the updated agency details
 
         res.status(200).json({
