@@ -9,10 +9,9 @@ import Admin from "../model/admin.js";
 import User from "../model/user.js";
 import {Meal, Vendor} from "../model/vendor.js";
 import {sendMail} from "../helper/mail.js";
-import Order from "../model/order.js";
 dotenv.config();
 const URL = "https://enterprise.spexafrica.site";
-// const verify = "https://enterprise-backend.vercel.app";
+
 const verify = "https://api.spexafrica.site";
 
 
@@ -224,6 +223,8 @@ export const resendVerificationEmail = async (req, res) => {
             return res.status(400).json({ message: 'Agency already verified' });
         }
 
+        // Check if agency
+
         // Generate a new verification token
         const token = jwt.sign({ email: agency.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
@@ -316,11 +317,17 @@ export const getCurrentAgency = async (req, res) => {
                         path: 'user' // Populate user in orders
                     },
                     {
-                        path: 'vendor' // Populate vendor in orders
+                        path: 'vendor', // Populate vendor in orders
+
                     }
                 ]
             }
-        }).populate('vendors');
+        }).populate({
+            path:'vendors',
+            populate : 'orders'
+        }).populate({
+            path:'subscription'
+        });
 
         if (!agency) {
             return res.status(404).json({ message: 'Agency not found' });

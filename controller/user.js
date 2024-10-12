@@ -121,6 +121,9 @@ export const signUp = async (req, res) => {
             if (!agency) {
                 return res.status(400).json({ message: "Invalid agency code" });
             }
+            if (agency.packs === 0 || agency.packs < 0  || !agency.subscription) {
+                return res.status(400).json({ message: "Enterprise limit reached or not subscribed yet " });
+            }
 
             // Generate user code based on agency's initials
             const userCode = generateUserCode(agency.initials, firstName, lastName);
@@ -209,6 +212,7 @@ export const verifyEmail = async (req, res) => {
         // Update user verification status
         await User.findOneAndUpdate({ email: decoded.email }, { isVerified: true });
 
+
         // Find the agency and update it
         const agency = await Agency.findById(user.agency);
         if (!agency) {
@@ -217,6 +221,32 @@ export const verifyEmail = async (req, res) => {
         agency.users.push(user._id);
         await agency.save();
 
+        // Extract user's full name and agency company name
+        const packUser = `${user.firstName} ${user.lastName}`;
+        const enterprise = user.agency;
+
+        // Get the current date in YYYY-MM-DD format
+        const currentDate = new Date().toISOString().split('T')[0];
+
+        // Check if the pack already exists for the user; if not, create a new one
+        let pack = await Pack.findOne({ userCode: user.code });
+        if (!pack) {
+            pack = await Pack.create({
+                packId: `${user.code}-${currentDate}`,
+                userCode: user.code,
+                userName: packUser,
+                agency: enterprise.company,
+                status: 'active',
+                issuedPack: 1,
+            });
+            user.pack = pack._id;
+        } else {
+            // If the pack exists, just update its status
+            pack.status = 'active';
+            await pack.save();
+        }
+
+        enterprise.pack -= 2
         // Redirect on successful verification
         return res.redirect(`${URL}/verify?status=success`);
     } catch (error) {
@@ -541,6 +571,9 @@ export const deleteUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Get the agency associated with the user
+        const agencyId = user.agency; // Assuming user has an 'agency' field that references the agency
+
         // Delete the user's profile photo from Cloudinary if it exists
         if (user.imagePublicId) {
             await cloudinary.uploader.destroy(user.imagePublicId);
@@ -562,6 +595,14 @@ export const deleteUser = async (req, res) => {
         await Pack.deleteMany({ user: userId });
         await PackRequest.deleteMany({ user: userId });
 
+        // If the agency exists, remove the user from the agency's user array
+        if (agencyId) {
+            await Agency.updateOne(
+                { _id: agencyId },
+                { $pull: { users: userId } } // Assuming 'users' is the field holding user references
+            );
+        }
+
         // Delete user record
         await User.findByIdAndDelete(userId);
 
@@ -572,3 +613,4 @@ export const deleteUser = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+

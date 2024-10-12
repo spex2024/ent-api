@@ -7,6 +7,8 @@ import agencyRoute from './route/auth/agency.js'
 import vendorRoute from './route/auth/vendor.js'
 import orderRoute from './route/auth/orders.js'
 import adminRoute from "./route/auth/admin.js";
+import subscriptionRoutes from './route/auth/subscription.js';
+import subscriptionPayment from './route/auth/payment.js'
 import cookieParser from "cookie-parser";
 import {v2 as cloudinary} from "cloudinary";
 import mongoose from "mongoose";
@@ -41,21 +43,14 @@ app.use('/api/enterprise' , agencyRoute)
 app.use('/api/vendor' , vendorRoute)
 app.use('/api/orders' ,orderRoute )
 app.use('/api/admin' ,adminRoute)
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/paystack', subscriptionPayment );
 
 app.get('/', (req, res) => {
     res.send('Hello World')
 })
 
-// Connect to MongoDB and start server
-// connectToMongoDB()
-//     .then(() => {
-//         app.listen(PORT, () => {
-//             console.log(`Server is running on port ${PORT}`);
-//         });
-//     })
-//     .catch((error) => {
-//         console.error('Failed to connect to MongoDB', error);
-//     });
+
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => app.listen(process.env.PORT, () => {
         console.log(`Server connected to the database and running on port ${process.env.PORT}`);
