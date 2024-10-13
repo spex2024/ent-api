@@ -241,7 +241,7 @@ export const verifyEmail = async (req, res) => {
                 userName: packUser,
                 agency: company,
                 status: 'inactive',
-                issuedPack: 2,
+                quantity: 2,
             });
             user.pack = pack._id;
             await user.save();
