@@ -120,11 +120,11 @@ export const completeOrder = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-
+        let pack = await Pack.findOne({ userCode: user.code });
+        pack.status = 'active';
         user.activePack = (user.activePack || 0) + 1; // Increment user's active pack
          user.agency.activePack = (user.agency.activePack || 0) + 1; // Increment agency's active pack
         await user.save();
-        console.log(user.agency.activePack)
 
         // Optionally create or update a pack here (not included in the original code)
 
