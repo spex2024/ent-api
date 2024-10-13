@@ -565,10 +565,6 @@ export const updateUserInfo = async (req, res) => {
     });
 };
 
-
-
-
-
 export const deleteUser = async (req, res) => {
     const userId = req.params.userId;
 

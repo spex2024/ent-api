@@ -133,10 +133,7 @@ export const signIn = async (req, res) => {
 
 
 
-        sendSuccessMail({
-            to: email,
-            subject: 'Sign Up Success',
-            html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
+
 
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
@@ -304,8 +301,6 @@ export const resetPassword = async (req, res) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
-
-
 // Controller to get all vendors
 export const getAllVendors = async (req, res) => {
     try {
@@ -315,7 +310,6 @@ export const getAllVendors = async (req, res) => {
         res.status(500).json({ message: 'Error fetching vendors', error });
     }
 };
-
 // Controller to get all users
 export const getAllUsers = async (req, res) => {
     try {
@@ -325,7 +319,6 @@ export const getAllUsers = async (req, res) => {
         res.status(500).json({ message: 'Error fetching users', error });
     }
 };
-
 // Controller to get all orders
 export const getAllOrders = async (req, res) => {
     try {
@@ -339,7 +332,6 @@ export const getAllOrders = async (req, res) => {
         res.status(500).json({ message: 'Error fetching orders', error });
     }
 };
-
 // Controller to get all agencies
 export const getAllAgencies = async (req, res) => {
     try {

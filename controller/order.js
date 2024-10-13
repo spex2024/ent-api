@@ -49,7 +49,7 @@ export const placeOrder = async (req, res) => {
             return res.status(400).json({ message: 'You have already placed a completed order today.' });
         }
 
-        // Check for pending orders
+       // Check for pending orders
         const pendingOrders = await Order.find({
             user: userId,
             status: 'pending',
@@ -120,8 +120,15 @@ export const completeOrder = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        console.log(user)
         let pack = await Pack.findOne({ userCode: user.code });
-        pack.status = 'active';
+
+       pack.status = 'active';
+       if(!pack.quantity){
+           pack.quantity = 2;
+       }
+        await pack.save();
+        console.log(pack)
         user.activePack = (user.activePack || 0) + 1; // Increment user's active pack
          user.agency.activePack = (user.agency.activePack || 0) + 1; // Increment agency's active pack
         await user.save();
