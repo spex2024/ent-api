@@ -84,12 +84,12 @@ export const createAdmin = async (req, res) => {
             });
             await  sendMail({  to: email,
                 subject: 'Sign Up Success',
-                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully</p>`,})
+                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
 
             sendSuccessMail({
                 to: email,
                 subject: 'Sign Up Success',
-                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully</p>`,})
+                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
             res.status(200).json({ message: "Admin created successfully", admin });
 
         } catch (error) {
@@ -130,6 +130,12 @@ export const signIn = async (req, res) => {
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
+
+        await  sendMail({  to: email,
+            subject: 'Sign Up Success',
+            html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
+
+
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
         console.error(error.message);
