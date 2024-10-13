@@ -240,14 +240,14 @@ export const verifyEmail = async (req, res) => {
                 userCode: user.code,
                 userName: packUser,
                 agency: company,
-                status: 'active',
-                issuedPack: 1,
+                status: 'inactive',
+                issuedPack: 2,
             });
             user.pack = pack._id;
             await user.save();
         } else {
             // If the pack exists, just update its status
-            pack.status = 'active';
+            pack.status = 'inactive';
             await pack.save();
         }
 
