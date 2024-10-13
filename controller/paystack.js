@@ -42,7 +42,7 @@ export const recordPayment = async (req, res) => {
     try {
         // Generate invoice number
         const orderNumber = await generateInvoiceNumber();
-        console.log(orderNumber);
+        console.log('Generated Order Number:', orderNumber);
 
         // Record the payment
         const newPayment = new PaymentModel({
@@ -54,6 +54,7 @@ export const recordPayment = async (req, res) => {
             status: 'success',
         });
         await newPayment.save();
+        console.log('Payment recorded successfully');
 
         // Find the agency by email
         const agency = await Agency.findOne({ email }).populate('subscription');
@@ -61,12 +62,15 @@ export const recordPayment = async (req, res) => {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        console.log(agency)
+        console.log('Agency found:', agency);
+
         // Find the new subscription by plan
         const newSubscription = await Subscription.findOne({ plan });
         if (!newSubscription) {
             return res.status(404).json({ message: 'Subscription plan not found' });
         }
+
+        console.log('New Subscription found:', newSubscription);
 
         // Check if the agency already has a subscription (i.e., upgrade scenario)
         if (agency.subscription) {
@@ -74,30 +78,40 @@ export const recordPayment = async (req, res) => {
         }
 
         // Get the number of staff from the new subscription
-        const numberOfStaff = newSubscription.staff || 0;  // Assuming `staff` is a field in Subscription
-        const numberOfPacks = numberOfStaff * 2;  // Calculate packs based on staff count
+        const numberOfStaff = newSubscription.staff || 0; // Assuming `staff` is a field in Subscription
+        const numberOfPacks = numberOfStaff * 2; // Calculate packs based on staff count
 
         // Get the current number of users in the agency
         const numberOfUsers = agency.users ? agency.users.length : 0;
-        const userPacks = numberOfUsers * 2;  // Each user "consumes" 2 packs
+        const userPacks = numberOfUsers * 2; // Each user "consumes" 2 packs
 
         // Recalculate the available packs after upgrade
         const availablePacks = numberOfPacks - userPacks;
-        agency.subscription = newSubscription._id; // Link new subscription to agency
-        agency.issuedPack= userPacks
-        agency.packs = availablePacks
+
+        // Assign the new subscription to the agency
+        agency.subscription = newSubscription._id;
+        agency.issuedPack = userPacks;
+        agency.packs = availablePacks;
+
+        console.log('Updated Agency details:', {
+            subscription: agency.subscription,
+            issuedPack: agency.issuedPack,
+            packs: agency.packs,
+        });
 
         await agency.save(); // Save the updated agency details
+        console.log('Agency subscription updated successfully');
 
         res.status(200).json({
             message: 'Payment and subscription update successful',
             orderNumber,
             availablePacks,
-            agency
+            agency,
         });
     } catch (error) {
         console.error('Error recording payment or updating subscription:', error);
         res.status(500).json({ error: error.message });
     }
 };
+
 
