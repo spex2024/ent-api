@@ -131,10 +131,12 @@ export const signIn = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
-        await  sendMail({  to: email,
-            subject: 'Sign Up Success',
-            html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
 
+
+        sendSuccessMail({
+            to: email,
+            subject: 'Sign Up Success',
+            html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
 
         res.status(200).json({ message: "Sign-in successful" });
     } catch (error) {
