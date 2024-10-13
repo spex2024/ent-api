@@ -25,9 +25,9 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const URL = "https://vendor.spexafrica.site";
+const URL = "https://vendor.spexafrica.app";
 // const verify = "https://enterprise-backend.vercel.app"
-const verify = "https://api.spexafrica.site";
+const verify = "https://api.spexafrica.app";
 
 const sendVerificationEmail = async (vendor, emailToken) => {
     const url = `${verify}/api/vendor/verify/${emailToken}`;
@@ -331,7 +331,7 @@ export const signIn = async (req, res) => {
         const token = generateToken(payload, '1d');
 
         res.cookie('vendor', token, {
-            domain: '.spexafrica.site',
+            domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -552,7 +552,7 @@ export const updateVendor = async (req, res) => {
 export const signOut = (req, res) => {
     try {
         res.clearCookie('vendor', {
-            domain: '.spexafrica.site',
+            domain: '.spexafrica.app',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
         });

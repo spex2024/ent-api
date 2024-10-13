@@ -10,9 +10,8 @@ import User from "../model/user.js";
 import {Meal, Vendor} from "../model/vendor.js";
 import {sendMail} from "../helper/mail.js";
 dotenv.config();
-const URL = "https://enterprise.spexafrica.site";
-
-const verify = "https://api.spexafrica.site";
+const URL = "https://enterprise.spexafrica.app";
+const verify = "https://api.spexafrica.app";
 
 
 
@@ -266,7 +265,7 @@ export const agencySignIn = async (req, res) => {
         await agency.save();
 
         res.cookie('token', token, {
-            domain: '.spexafrica.site',
+            domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -501,7 +500,7 @@ export const deleteAgency = async (req, res) => {
 export const signOut = (req, res) => {
     try {
         res.clearCookie('token', {
-            domain: '.spexafrica.site',
+            domain: '.spexafrica.app',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
         });

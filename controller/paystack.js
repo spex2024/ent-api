@@ -80,13 +80,9 @@ export const recordPayment = async (req, res) => {
         // Get the current number of users in the agency
         const numberOfUsers = agency.users ? agency.users.length : 0;
         const userPacks = numberOfUsers * 2;  // Each user "consumes" 2 packs
-           console.log('users :',numberOfUsers)
-           console.log('packs :',userPacks)
+
         // Recalculate the available packs after upgrade
         const availablePacks = numberOfPacks - userPacks;
-        console.log(newSubscription);
-        console.log(availablePacks)
-        // Update the agency with the new subscription and recalculated packs
         agency.subscription = newSubscription._id; // Link new subscription to agency
         agency.issuedPack= userPacks
         agency.packs = availablePacks

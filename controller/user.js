@@ -15,9 +15,10 @@ import {sendMail} from "../helper/mail.js";
 
 
 dotenv.config();
-const URL = "https://user.spexafrica.site";
-// const verify = "https://enterprise-backend.vercel.app";
-const verify = 'https://api.spexafrica.site';
+const URL = "https://user.spexafrica.app";
+// const URL = "http://localhost:3000";
+// const verify = "http://localhost:8080";
+const verify = 'https://api.spexafrica.app';
 
 // const transporter = nodemailer.createTransport({
 //     service: "gmail",
@@ -193,7 +194,6 @@ export const verifyEmail = async (req, res) => {
     const token = req.params.token;
 
     try {
-        // Verify the JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         // Find the user by email
@@ -206,24 +206,28 @@ export const verifyEmail = async (req, res) => {
 
         // Check if the user is already verified
         if (user.isVerified) {
-            return res.redirect(`${URL}/verify?status=verified`);
+            return res.redirect(`${process.env.URL}/verify?status=verified`);
         }
 
         // Update user verification status
-        await User.findOneAndUpdate({ email: decoded.email }, { isVerified: true });
-
+        user.isVerified = true;
+        await user.save();
 
         // Find the agency and update it
         const agency = await Agency.findById(user.agency);
         if (!agency) {
             return res.status(404).json({ message: 'Agency not found' });
         }
-        agency.users.push(user._id);
+
+        // Add the user to the agency's user list if not already present
+        if (!agency.users.includes(user._id)) {
+            agency.users.push(user._id);
+        }
         await agency.save();
 
-        // Extract user's full name and agency company name
+        // Extract user's full name and agency's company name
         const packUser = `${user.firstName} ${user.lastName}`;
-        const enterprise = user.agency;
+        const company = agency.company;
 
         // Get the current date in YYYY-MM-DD format
         const currentDate = new Date().toISOString().split('T')[0];
@@ -235,18 +239,22 @@ export const verifyEmail = async (req, res) => {
                 packId: `${user.code}-${currentDate}`,
                 userCode: user.code,
                 userName: packUser,
-                agency: enterprise.company,
+                agency: company,
                 status: 'active',
                 issuedPack: 1,
             });
             user.pack = pack._id;
+            await user.save();
         } else {
             // If the pack exists, just update its status
             pack.status = 'active';
             await pack.save();
         }
 
-        enterprise.pack -= 2
+        // Decrement enterprise pack count
+        agency.packs = agency.packs - 2;
+        agency.issuedPack +=2
+        await agency.save();
         // Redirect on successful verification
         return res.redirect(`${URL}/verify?status=success`);
     } catch (error) {
@@ -318,7 +326,7 @@ export const signIn = async (req, res) => {
         const token = generateToken(payload, '1d');
 
         res.cookie('user', token, {
-            domain: '.spexafrica.site',
+            // domain: '.spexafrica.site',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -426,7 +434,7 @@ export const getVendor = async (req, res) => {
 export const signOut = (req, res) => {
     try {
         res.clearCookie('user', {
-            domain: '.spexafrica.site',
+            // domain: '.spexafrica.site',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
         });

@@ -22,7 +22,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser())
 app.use(cors({
-    origin: ['https://admin.spexafrica.site','https://user.spexafrica.site','https://vendor.spexafrica.site','https://enterprise.spexafrica.site', 'http://localhost:3000'], // Replace with your client URL
+    origin: ['https://admin.spexafrica.app','https://user.spexafrica.app','https://vendor.spexafrica.app','https://enterprise.spexafrica.app', 'http://localhost:3000','http://localhost:3001'], // Replace with your client URL
     credentials: true,
 }));
 

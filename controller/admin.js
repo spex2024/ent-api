@@ -124,7 +124,7 @@ export const signIn = async (req, res) => {
         const token = generateToken({ id: admin._id }, '1d');
 
         res.cookie('admin', token, {
-            domain: '.spexafrica.site',
+            domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -139,7 +139,7 @@ export const signIn = async (req, res) => {
 
 export const signOut = (req, res) => {
     res.cookie('admin', '', {
-        domain: '.spexafrica.site',
+        domain: '.spexafrica.app',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 0 // Set the cookie to expire immediately
