@@ -247,10 +247,11 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-        if (!agency.isActive) {
+        if (agency.subscription && agency.isActive === undefined) {
             agency.isActive = true;
             await agency.save();
         }
+
 
         const match = await bcrypt.compare(password, agency.password);
         if (!match) {
