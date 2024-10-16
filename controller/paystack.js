@@ -92,6 +92,7 @@ export const recordPayment = async (req, res) => {
         agency.subscription = newSubscription._id;
         agency.issuedPack = userPacks;
         agency.packs = availablePacks;
+        agency.isActive = true
 
         console.log('Updated Agency details:', {
             subscription: agency.subscription,
