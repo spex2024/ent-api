@@ -25,6 +25,7 @@ const AgencySchema = new Schema(
             imageUrl: { type: String,  },
             imagePublicId: { type: String,  },
             isVerified: { type: Boolean, default: false }, // Assuming isVerified is a boolean
+            isActive: { type: Boolean, default: false }, // Assuming isVerified is a boolean
             users: [{ type: Schema.Types.ObjectId, ref: 'User' }],
             vendors: [{ type: Schema.Types.ObjectId, ref: 'Vendor' }],
     },
