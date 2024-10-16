@@ -331,7 +331,7 @@ export const signIn = async (req, res) => {
         const token = generateToken(payload, '1d');
 
         res.cookie('vendor', token, {
-            // domain: '.spexafrica.app',
+            domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -552,7 +552,7 @@ export const updateVendor = async (req, res) => {
 export const signOut = (req, res) => {
     try {
         res.clearCookie('vendor', {
-            // domain: '.spexafrica.app',
+            domain: '.spexafrica.app',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
         });
