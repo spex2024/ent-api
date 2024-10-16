@@ -247,13 +247,11 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-        if (agency.hasOwnProperty('isActive')) {
-            // If `isActive` is false, set it to true
-            if (!agency.isActive) {
-                agency.isActive = true;
-                await agency.save();
-            }
+        if (!agency.isActive) {
+            agency.isActive = true;
+            await agency.save();
         }
+
         const match = await bcrypt.compare(password, agency.password);
         if (!match) {
             return res.status(400).json({ message: 'Incorrect password' });
