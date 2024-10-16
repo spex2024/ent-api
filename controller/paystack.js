@@ -76,7 +76,7 @@ export const recordPayment = async (req, res) => {
         if (agency.subscription) {
             console.log('Upgrading subscription from:', agency.subscription.plan, 'to:', newSubscription.plan);
         }
-
+        agency.isActive = true
         // Get the number of staff from the new subscription
         const numberOfStaff = newSubscription.staff || 0; // Assuming `staff` is a field in Subscription
         const numberOfPacks = numberOfStaff * 2; // Calculate packs based on staff count
@@ -92,7 +92,7 @@ export const recordPayment = async (req, res) => {
         agency.subscription = newSubscription._id;
         agency.issuedPack = userPacks;
         agency.packs = availablePacks;
-        agency.isActive = true
+
 
         console.log('Updated Agency details:', {
             subscription: agency.subscription,
