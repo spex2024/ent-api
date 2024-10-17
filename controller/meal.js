@@ -49,6 +49,7 @@ export const createMeal = async (req, res) => {
                 main: {
                     name: main.name,
                     price: parseFloat(main.price), // Convert price to number
+                    description : main.description,
                 },
                 protein: proteins,
                 sauce: sauces,
