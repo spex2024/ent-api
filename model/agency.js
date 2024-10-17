@@ -22,6 +22,7 @@ const AgencySchema = new Schema(
             emissionSaved: { type: Number, default: 0 },
             token:{type:String},
             subscription:{type: Schema.Types.ObjectId, ref: 'Subscription'},
+            payment:{type: Schema.Types.ObjectId, ref: 'Payment'},
             imageUrl: { type: String,  },
             imagePublicId: { type: String,  },
             isVerified: { type: Boolean, default: false }, // Assuming isVerified is a boolean

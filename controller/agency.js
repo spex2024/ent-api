@@ -9,6 +9,7 @@ import Admin from "../model/admin.js";
 import User from "../model/user.js";
 import {Meal, Vendor} from "../model/vendor.js";
 import {sendMail} from "../helper/mail.js";
+import Payment from "../model/payment.js";
 dotenv.config();
 const URL = "https://enterprise.spexafrica.app";
 const verify = "https://api.spexafrica.app";
@@ -249,6 +250,13 @@ export const agencySignIn = async (req, res) => {
         }
         if (agency.subscription && agency.isActive === undefined) {
             agency.isActive = true;
+            await agency.save();
+        }
+
+        const payment = await Payment.findOne({ email });
+
+     if (agency.subscription && agency.payment === undefined) {
+            agency.payment = payment._id;
             await agency.save();
         }
 
