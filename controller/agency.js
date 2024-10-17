@@ -254,9 +254,16 @@ export const agencySignIn = async (req, res) => {
         }
 
         const payment = await Payment.findOne({ email });
+        if (agency.subscription) {
+            // Check if agency.payment is undefined or not an array, initialize it as an array
+            if (!Array.isArray(agency.payment)) {
+                agency.payment = [];
+            }
 
-     if (agency.subscription && agency.payment === undefined) {
-            agency.payment = payment._id;
+            // Push payment._id into the payment array
+            agency.payment.push(payment._id);
+
+            // Save the updated agency document
             await agency.save();
         }
 
