@@ -248,7 +248,7 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-        if (agency.subscription && agency.isActive === undefined) {
+        if (agency.subscription && agency.isActive === false) {
             agency.isActive = true;
             await agency.save();
         }
