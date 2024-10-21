@@ -25,6 +25,9 @@ const SubscriptionSchema = new mongoose.Schema({
         type: Number,
         enum: [3, 6], // Allow only 3 or 6 months
     },
+    monthlyPayment: {
+        type: Number,
+    },
     customDescription: {
         type: String, // Description for custom subscription payments
     },

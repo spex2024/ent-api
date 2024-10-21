@@ -30,16 +30,16 @@ export const addOneTimeSubscription = async (req, res) => {
 
 // Function to handle installment subscription payments
 export const addInstallmentSubscription = async (req, res) => {
-    const { plan, price, features, staff, installmentDuration } = req.body;
+    const { plan, price, features, staff, installmentDuration, monthlyPayment } = req.body;
 
     try {
         // Check if the plan already exists
-        const existingSubscription = await Subscription.findOne({ plan });
+        const existingSubscription = await Subscription.findOne({ monthlyPayment });
 
         if (existingSubscription) {
             return res.status(400).json({ error: 'Plan already exists. Please choose a different plan name.' });
         }
-
+        const monthly = Number(monthlyPayment);
         // Create a new installment subscription
         const newSubscription = await Subscription.create({
             plan,
@@ -48,18 +48,19 @@ export const addInstallmentSubscription = async (req, res) => {
             staff,
             features,
             installmentDuration, // Include the installment duration
+            monthlyPayment:monthly,
         });
 
         return res.status(201).json(newSubscription);
     } catch (error) {
         console.error('Error adding installment subscription:', error);
-        return res.status(500).json({ error: 'Failed to add installment subscription' });
+        return res.status(500).json({ error: error.message});
     }
 };
 
 // Function to handle custom subscription payments
 export const addCustomSubscription = async (req, res) => {
-    const { plan, price, features, staff, customDescription } = req.body;
+    const { plan, price, features, staff, monthlyPayment } = req.body;
 
     try {
         // Check if the plan already exists
@@ -68,7 +69,7 @@ export const addCustomSubscription = async (req, res) => {
         if (existingSubscription) {
             return res.status(400).json({ error: 'Plan already exists. Please choose a different plan name.' });
         }
-
+        const monthly = Number(monthlyPayment);
         // Create a new custom subscription
         const newSubscription = await Subscription.create({
             plan,
@@ -76,7 +77,7 @@ export const addCustomSubscription = async (req, res) => {
             paymentType: 'custom', // Set paymentType to custom
             staff,
             features,
-            customDescription, // Include the custom description
+            monthlyPayment : monthly,
         });
 
         return res.status(201).json(newSubscription);
