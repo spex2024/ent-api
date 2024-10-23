@@ -15,6 +15,7 @@ const UserSchema = new Schema({
     activePack: { type: Number, default: 0 },
     returnedPack: { type: Number, default: 0 },
     points: { type: Number, default: 0 },
+    gramPoints: { type: Number, default: 0 },
     moneyBalance: { type: Number, default: 0 }, // Add money balance field
     emissionSaved: { type: Number, default: 0 }, // Add money balance field
     imageUrl: { type: String },

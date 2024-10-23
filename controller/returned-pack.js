@@ -65,6 +65,7 @@ export const handlePackRequest = async (req, res) => {
             user.returnedPack = (user.returnedPack || 0) + 1; // Increment returnedPack
             user.emissionSaved = (user.emissionSaved || 0) + 4; // Increment emissions saved by 4 per pack
             user.points = (user.points || 0) + 0.07; // Increment points by 0.07 kg per pack
+            user.gramPoints = (user.gramPoints || 0) + 0.07; // Increment points by 0.07 kg per pack
             agency.returnedPack += 1; // Increment agency's returnedPack count
 
             // Calculate money based on emissions saved: 60 emissions saved = 1kg = 1 GHS

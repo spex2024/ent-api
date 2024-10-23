@@ -320,17 +320,20 @@ export const signIn = async (req, res) => {
         if (user.returnedPack === 1) {
             const expectedEmissionSaved = 4; // 4 emissions saved per returned pack
             const expectedPoints = 0.07; // Points earned for the returned pack
+            const expectedGrams = 0.07; // Points earned for the returned pack
             const expectedMoneyBalance = (expectedEmissionSaved / 60).toFixed(2); // 60 emission = 1kg = 1 GHS
 
             // Check if the values are correct, and update if needed
             if (
                 user.emissionSaved !== expectedEmissionSaved ||
                 user.points !== expectedPoints ||
+                user.gramPoints !== expectedGrams ||
                 user.moneyBalance !== expectedMoneyBalance
             ) {
                 // Update the values
                 user.emissionSaved = expectedEmissionSaved;
                 user.points = expectedPoints;
+                user.gramPoints = expectedGrams;
                 user.moneyBalance = expectedMoneyBalance;
 
                 await user.save(); // Save updated values
