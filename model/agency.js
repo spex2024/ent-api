@@ -18,6 +18,7 @@ const AgencySchema = new Schema(
             issuedPack: { type: Number, default: 0 },
             returnedPack: { type: Number, default: 0 },
             points: { type: Number, default: 0 },
+            gramPoints: { type: Number, default: 0 },
             moneyBalance: { type: Number, default: 0 },
             emissionSaved: { type: Number, default: 0 },
             token:{type:String},

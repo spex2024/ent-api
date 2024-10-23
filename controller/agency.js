@@ -240,7 +240,7 @@ export const agencySignIn = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const agency = await Agency.findOne({ email });
+        const agency = await Agency.findOne({ email }).populate('users'); // Ensure to populate users
         if (!agency) {
             return res.status(400).json({ message: 'Account does not exist or token has expired. Please create an account.' });
         }
@@ -248,7 +248,9 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-        if (agency.subscription && agency.isActive === false) {
+
+        // Activate agency if it is not active but has a subscription
+        if (agency.subscription && !agency.isActive) {
             agency.isActive = true;
             await agency.save();
         }
@@ -262,16 +264,33 @@ export const agencySignIn = async (req, res) => {
 
             // Push payment._id into the payment array
             agency.payment.push(payment._id);
-
-            // Save the updated agency document
-            await agency.save();
+            await agency.save(); // Save the updated agency document
         }
-
 
         const match = await bcrypt.compare(password, agency.password);
         if (!match) {
             return res.status(400).json({ message: 'Incorrect password' });
         }
+
+        // Count how many users have activePack = 1
+        const activePackCount = agency.users.filter(user => user.activePack === 1).length;
+
+        // Set the agency's activePack to the total count of these users
+        agency.activePack = activePackCount;
+
+        // Aggregate points, gramPoints, emissionSaved, and moneyBalance from users
+        const points = agency.users.reduce((total, user) => total + (user.points || 0), 0);
+        const gramPoints = agency.users.reduce((total, user) => total + (user.gramPoints || 0), 0);
+        const emissionSaved = agency.users.reduce((total, user) => total + (user.emissionSaved || 0), 0);
+        const moneyBalance = agency.users.reduce((total, user) => total + (user.moneyBalance || 0), 0);
+
+        // Update the agency's values
+        agency.points = points;
+        agency.gramPoints = gramPoints.toFixed(2);
+        agency.emissionSaved = emissionSaved;
+        agency.moneyBalance = moneyBalance.toFixed(2);
+
+        await agency.save(); // Save the updated agency document
 
         const payload = {
             agency: {
@@ -285,7 +304,7 @@ export const agencySignIn = async (req, res) => {
         await agency.save();
 
         res.cookie('token', token, {
-            // domain: '.spexafrica.app',
+            domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -520,7 +539,7 @@ export const deleteAgency = async (req, res) => {
 export const signOut = (req, res) => {
     try {
         res.clearCookie('token', {
-            // domain: '.spexafrica.app',
+            domain: '.spexafrica.app',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
         });
@@ -550,7 +569,7 @@ export const addVendor = async (req, res) => {
 
         // Check the number of existing vendors for the agency
         const existingVendorCount = agency.vendors.length;
-        if (existingVendorCount + vendors.length > 2) {
+        if (existingVendorCount + vendors.length > 3) {
             return res.status(400).json({ message: 'Cannot add more than two vendors to the enterprise' });
         }
 
