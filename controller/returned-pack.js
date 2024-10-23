@@ -69,7 +69,7 @@ export const handlePackRequest = async (req, res) => {
 
             // Calculate money based on emissions saved: 60 emissions saved = 1kg = 1 GHS
             const totalKgSaved = user.emissionSaved / 60; // 60 emissions = 1 kg
-            user.moneyBalance = Math.ceil(totalKgSaved); // Round up to the nearest GHS
+            user.moneyBalance = (totalKgSaved).toFixed(2); // Round up to the nearest GHS
 
             // Decrease the user's active pack number
             if (user.activePack > 0) {
