@@ -20,6 +20,7 @@ const UserSchema = new Schema({
     imageUrl: { type: String },
     imagePublicId: { type: String },
     orders: [{ type: Schema.Types.ObjectId, ref: 'Order' }], // Array of Order IDs associated with this User
+    cashOut: [{ type: Schema.Types.ObjectId, ref: 'Order' }], // Array of Order IDs associated with this User
     pack: { type: Schema.Types.ObjectId, ref: 'Pack' } // Reference to a single Pack document
 }, { timestamps: true });
 

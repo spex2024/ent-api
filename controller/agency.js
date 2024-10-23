@@ -285,7 +285,7 @@ export const agencySignIn = async (req, res) => {
         await agency.save();
 
         res.cookie('token', token, {
-            domain: '.spexafrica.app',
+            // domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
@@ -520,7 +520,7 @@ export const deleteAgency = async (req, res) => {
 export const signOut = (req, res) => {
     try {
         res.clearCookie('token', {
-            domain: '.spexafrica.app',
+            // domain: '.spexafrica.app',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
         });

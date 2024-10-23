@@ -316,6 +316,27 @@ export const signIn = async (req, res) => {
             return res.status(400).json({ message: 'Incorrect password.' });
         }
 
+        // Check if returnedPack is 1 and validate the emissionSaved, points, and moneyBalance
+        if (user.returnedPack === 1) {
+            const expectedEmissionSaved = 4; // 4 emissions saved per returned pack
+            const expectedPoints = 0.07; // Points earned for the returned pack
+            const expectedMoneyBalance = Math.ceil(expectedEmissionSaved / 60); // 60 emission = 1kg = 1 GHS
+
+            // Check if the values are correct, and update if needed
+            if (
+                user.emissionSaved !== expectedEmissionSaved ||
+                user.points !== expectedPoints ||
+                user.moneyBalance !== expectedMoneyBalance
+            ) {
+                // Update the values
+                user.emissionSaved = expectedEmissionSaved;
+                user.points = expectedPoints;
+                user.moneyBalance = expectedMoneyBalance;
+
+                await user.save(); // Save updated values
+            }
+        }
+
         const payload = {
             user: {
                 id: user._id,
@@ -332,12 +353,13 @@ export const signIn = async (req, res) => {
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
-        res.status(200).json({message: 'Login successful'});
+        res.status(200).json({ message: 'Login successful' });
     } catch (error) {
         console.error(error.message);
         res.status(500).send(error.message);
     }
 };
+
 
 export const getAllUsers = async (req, res) => {
     try {

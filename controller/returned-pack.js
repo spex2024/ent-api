@@ -53,33 +53,38 @@ export const handlePackRequest = async (req, res) => {
             return res.status(400).json({ message: 'Invalid or already processed request' });
         }
 
+        const user = packRequest.user;
+        const agency = packRequest.user.agency;
+
         if (action === 'approve') {
             // Approve the pack request
             packRequest.status = 'Approved';
             await packRequest.save();
 
-            // Update the user's returnedPack count, points, and moneyBalance
-            const user = packRequest.user;
-            const agency = packRequest.user.agency
+            // Update the user's returnedPack count, emissionSaved, and points
             user.returnedPack = (user.returnedPack || 0) + 1; // Increment returnedPack
-            user.emissionSaved += 0.02
-            user.points = user.returnedPack * user.emissionSaved; // Set points to twice the returnedPack count
-            user.moneyBalance = user.points * 0.50; // Set moneyBalance to points * 0.50
-            agency.returnedPack += 1;
+            user.emissionSaved = (user.emissionSaved || 0) + 4; // Increment emissions saved by 4 per pack
+            user.points = (user.points || 0) + 0.07; // Increment points by 0.07 kg per pack
+            agency.returnedPack += 1; // Increment agency's returnedPack count
+
+            // Calculate money based on emissions saved: 60 emissions saved = 1kg = 1 GHS
+            const totalKgSaved = user.emissionSaved / 60; // 60 emissions = 1 kg
+            user.moneyBalance = Math.ceil(totalKgSaved); // Round up to the nearest GHS
 
             // Decrease the user's active pack number
-            if (user.activePack> 0) {
+            if (user.activePack > 0) {
                 user.activePack -= 1;
-                user.agency.activePack -= 1
+                agency.activePack -= 1;
             }
 
             await user.save();
+            await agency.save();
 
             // Find and update the corresponding pack
-            const pack = await Pack.findOne({ userCode: user.code});
+            const pack = await Pack.findOne({ userCode: user.code });
 
             if (pack) {
-                // Update the pack status to 'processed'
+                // Update the pack status to 'returned'
                 pack.status = 'returned';
                 await pack.save();
             } else {
@@ -92,27 +97,26 @@ export const handlePackRequest = async (req, res) => {
             packRequest.status = 'Rejected';
             await packRequest.save();
 
-            const pack = await Pack.findOne({ userCode: user.code});
+            const pack = await Pack.findOne({ userCode: user.code });
 
             if (pack) {
                 // Update the pack status based on its current status
                 if (pack.status === 'active') {
                     pack.status = 'cancelled';
                 }
-                // If the status is 'returned', we maintain it as 'returned'
                 await pack.save();
             }
-
 
             res.status(200).json({ message: 'Pack request rejected', packRequest });
         } else {
             return res.status(400).json({ message: 'Invalid action' });
         }
     } catch (error) {
-        console.error('Error handling pack request:', error); // Add logging
+        console.error('Error handling pack request:', error);
         res.status(500).json({ message: 'Error handling pack request', error });
     }
 };
+
 
 
 
