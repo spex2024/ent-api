@@ -306,6 +306,10 @@ export const signIn = async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: 'Account does not exist or token has expired. Please create an account.' });
         }
+        if (!user.agency.isActive) {
+            return res.status(400).json({ message: 'Your company has outstanding payments, and access is currently restricted.' });
+        }
+
 
         if (!user.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first.' });

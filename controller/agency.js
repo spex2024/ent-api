@@ -240,7 +240,8 @@ export const agencySignIn = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const agency = await Agency.findOne({ email }).populate('users'); // Ensure to populate users
+        // Find the agency and populate both 'users' and 'payment' collections
+        const agency = await Agency.findOne({ email }).populate('users').populate('payment');
         if (!agency) {
             return res.status(400).json({ message: 'Account does not exist or token has expired. Please create an account.' });
         }
@@ -248,25 +249,23 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-
-        // Activate agency if it is not active but has a subscription
-        if (agency.subscription && !agency.isActive) {
-            agency.isActive = true;
-            await agency.save();
-        }
-
-        const payment = await Payment.findOne({ email });
-        if (agency.subscription) {
-            // Check if agency.payment is undefined or not an array, initialize it as an array
-            if (!Array.isArray(agency.payment)) {
-                agency.payment = [];
+        const totalPaid = agency.payment.reduce((accum, payment) => {
+            if (payment.plan === "Silver" && payment.paymentType === 'installment') {
+                return accum + payment.amountPaid; // Assuming the amountPaid field exists in the Payment model
             }
+            return accum;
+        }, 0);
 
-            // Push payment._id into the payment array
-            agency.payment.push(payment._id);
-            await agency.save(); // Save the updated agency document
-        }
+        console.log(totalPaid);
 
+// // Activate agency if it is not active but has a valid subscription
+//         if (agency.subscription && !agency.isActive ) {
+//             agency.isActive = true;
+//             await agency.save();
+//         }
+
+
+        // Continue with the password check and other operations
         const match = await bcrypt.compare(password, agency.password);
         if (!match) {
             return res.status(400).json({ message: 'Incorrect password' });
@@ -292,6 +291,7 @@ export const agencySignIn = async (req, res) => {
 
         await agency.save(); // Save the updated agency document
 
+        // Generate a token for the session
         const payload = {
             agency: {
                 id: agency._id,
@@ -304,14 +304,27 @@ export const agencySignIn = async (req, res) => {
         await agency.save();
 
         res.cookie('token', token, {
-            domain: '.spexafrica.app',
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' in production
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
         res.json({ message: 'Login successful' });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+export const signOut = (req, res) => {
+    try {
+        res.clearCookie('token', {
+            domain: '.spexafrica.app',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+        });
+        res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
@@ -536,19 +549,7 @@ export const deleteAgency = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-export const signOut = (req, res) => {
-    try {
-        res.clearCookie('token', {
-            domain: '.spexafrica.app',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        });
-        res.status(200).json({ message: 'Logout successful' });
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
-    }
-};
+
 export const addVendor = async (req, res) => {
     const vendors = req.body; // Extract vendor IDs from request body
     const token = req.cookies.token; // Assuming token is stored in cookies

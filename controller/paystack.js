@@ -80,7 +80,12 @@ export const recordOneTimePayment = async (req, res) => {
         });
 
         await newPayment.save();
-        await updateAgencySubscription(agency, subscription);
+        agency.payment.push(newPayment._id);
+        await agency.save(); // Save the updated agency document
+        // Update the agency's subscription after the first installment
+        if (!agency.subscription || agency.subscription.plan !== subscription.plan || agency.isActive === false) {
+            await updateAgencySubscription(agency, subscription);
+        }
 
         res.status(200).json({
             message: 'One-time payment recorded successfully',
@@ -99,7 +104,7 @@ export const recordInstallmentPayment = async (req, res) => {
 
     try {
         // Find the subscription plan
-        const subscription = await Subscription.findOne({ plan });
+        const subscription = await Subscription.findOne({ monthlyPayment: amount });
         if (!subscription) {
             return res.status(404).json({ message: 'Subscription plan not found' });
         }
@@ -107,21 +112,27 @@ export const recordInstallmentPayment = async (req, res) => {
         const orderNumber = await generateInvoiceNumber();
 
         // Find the agency by email
-        const agency = await Agency.findOne({ email }).populate('subscription');
+        const agency = await Agency.findOne({ email }).populate('subscription').populate('payment');
         if (!agency) {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        if (subscription.paymentType === 'installment') {
-        // Calculate total amount for the subscription plan
-        const totalAmount = subscription.price; // Assuming the price field exists in the Subscription model
+        // Calculate total amount paid so far from previous payments
+        const totalPaid = agency.payment.reduce((accum, payment) => {
+            if (payment.plan === plan && payment.paymentType === 'installment') {
+                return accum + payment.amountPaid; // Summing amountPaid for relevant installment payments
+            }
+            return accum;
+        }, 0);
+         console.log(totalPaid);
+        const totalAmount = subscription.price; // Total amount for the subscription plan
+        const nextDueDate = new Date(new Date().getTime() + 20 * 60 * 1000); // Next due date is in 20 minutes
 
-        }
-
-        // Calculate how much each installment should be
-        const installmentAmount = totalAmount / installmentDuration;
-
-        // Record the installment payment
+        // Calculate new total paid including the current installment
+        const newTotalPaid = totalPaid + amount;
+        const balance = newTotalPaid - totalAmount; // Calculate remaining balance
+        console.log(newTotalPaid)
+        // Create a new payment record
         const newPayment = new PaymentModel({
             email,
             plan,
@@ -129,31 +140,34 @@ export const recordInstallmentPayment = async (req, res) => {
             reference,
             orderNumber,
             totalAmount, // Total amount due
-            amountPaid: amount, // First payment amount
-            balance: totalAmount - amount, // Remaining balance
+            amountPaid: newTotalPaid, // Include previous payments in amountPaid
+            balance: balance, // Remaining balance
             installmentDuration,
-            nextDueDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Next due date is in 1 month
+            nextDueDate,
             installmentPayments: [{
                 amount,
                 date: new Date(),
                 status: 'paid',
             }],
-            status: amount >= totalAmount ? 'completed' : 'partially_paid',
+            status: newTotalPaid >= totalAmount ? 'completed' : 'partially_paid',
             paymentType: 'installment',
         });
 
-        await newPayment.save();
+        await newPayment.save(); // Save the new payment record
 
-        // Update the agency's subscription after the first installment
-        if (!agency.subscription) {
+        // Add the new payment to the agency's payment array
+        agency.payment.push(newPayment._id);
+        await agency.save(); // Save the updated agency document
+
+        // Update the agency's subscription after the installment payment
+        if (!agency.subscription || agency.subscription.plan !== subscription.plan || agency.isActive === false) {
             await updateAgencySubscription(agency, subscription);
         }
-
 
         res.status(200).json({
             message: 'Installment payment recorded successfully',
             orderNumber,
-            balance: newPayment.balance,
+            balance: newPayment.balance, // Reflecting the current balance (could be negative for overpayment)
             nextDueDate: newPayment.nextDueDate,
         });
     } catch (error) {
@@ -161,3 +175,4 @@ export const recordInstallmentPayment = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
