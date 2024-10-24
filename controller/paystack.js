@@ -20,20 +20,21 @@ const updateAgencySubscription = async (agency, newSubscription) => {
     return agency.save();
 };
 
-export const purchase = async (req, res) => {
-    const { email, amount, callback_url } = req.body;
+export const purchase =  async (req, res) => {
+    const { email, amount } = req.body;
 
     try {
         const response = await paystack.initializeTransaction({
             email,
-            amount: amount * 100, // Convert to Kobo
-            callback_url,
+            amount: amount * 100, // Convert to kobo
+            callback_url: req.body.callback_url,
         });
         res.status(200).json(response.body);
     } catch (error) {
-        res.status(500).json({ error: "Failed to initialize transaction" });
+        res.status(500).json({ error: error.message });
     }
 };
+
 
 export const verifyPayment = async (req, res) => {
     const { reference } = req.params;
