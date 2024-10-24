@@ -1,32 +1,50 @@
-// Initialize a payment
 import paystack from "../helper/paystack-service.js";
 import generateInvoiceNumber from "../helper/order-number.js";
 import PaymentModel from "../model/payment.js";
 import Agency from "../model/agency.js";
 import Subscription from "../model/add-subscription.js";
 
-export const purchase =  async (req, res) => {
-    const { email, amount } = req.body;
+// Helper function for updating agency subscription
+const updateAgencySubscription = async (agency, newSubscription) => {
+    const numberOfStaff = newSubscription.staff || 0;
+    const numberOfPacks = numberOfStaff * 2;
+    const numberOfUsers = agency.users ? agency.users.length : 0;
+    const userPacks = numberOfUsers * 2;
+    const availablePacks = numberOfPacks - userPacks;
+
+    agency.subscription = newSubscription._id;
+    agency.issuedPack = userPacks;
+    agency.packs = availablePacks;
+    agency.isActive = true;
+
+    return agency.save();
+};
+
+export const purchase = async (req, res) => {
+    const { email, amount, callback_url } = req.body;
 
     try {
         const response = await paystack.initializeTransaction({
             email,
-            amount: amount * 100, // Convert to kobo
-            callback_url: req.body.callback_url,
+            amount: amount * 100, // Convert to Kobo
+            callback_url,
         });
         res.status(200).json(response.body);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Failed to initialize transaction" });
     }
 };
 
-// Verify payment
 export const verifyPayment = async (req, res) => {
     const { reference } = req.params;
 
     try {
         const response = await paystack.verifyTransaction({ reference });
-        res.status(200).json(response.body);
+        if (response.body.status === "success") {
+            res.status(200).json(response.body);
+        } else {
+            res.status(400).json({ error: error.message });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -34,27 +52,14 @@ export const verifyPayment = async (req, res) => {
 
 
 
-// Function to record payment and link subscription with agency
-export const recordPayment = async (req, res) => {
+
+
+export const recordOneTimePayment = async (req, res) => {
     const { email, plan, amount, reference } = req.body;
-    console.log(email, plan, amount, reference);
 
     try {
-        // Generate invoice number
+        // Generate an invoice number
         const orderNumber = await generateInvoiceNumber();
-        console.log('Generated Order Number:', orderNumber);
-
-        // Record the payment
-        const newPayment = new PaymentModel({
-            email,
-            plan,
-            amount,
-            reference,
-            orderNumber,
-            status: 'success',
-        });
-        await newPayment.save();
-        console.log('Payment recorded successfully');
 
         // Find the agency by email
         const agency = await Agency.findOne({ email }).populate('subscription');
@@ -62,57 +67,99 @@ export const recordPayment = async (req, res) => {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        console.log('Agency found:', agency);
-
-        // Find the new subscription by plan
-        const newSubscription = await Subscription.findOne({ plan });
-        if (!newSubscription) {
+        // Find the subscription plan by name
+        const subscription = await Subscription.findOne({ plan });
+        if (!subscription) {
             return res.status(404).json({ message: 'Subscription plan not found' });
         }
 
-        console.log('New Subscription found:', newSubscription);
-
-        // Check if the agency already has a subscription (i.e., upgrade scenario)
-        if (agency.subscription) {
-            console.log('Upgrading subscription from:', agency.subscription.plan, 'to:', newSubscription.plan);
-        }
-        agency.isActive = true
-        // Get the number of staff from the new subscription
-        const numberOfStaff = newSubscription.staff || 0; // Assuming `staff` is a field in Subscription
-        const numberOfPacks = numberOfStaff * 2; // Calculate packs based on staff count
-
-        // Get the current number of users in the agency
-        const numberOfUsers = agency.users ? agency.users.length : 0;
-        const userPacks = numberOfUsers * 2; // Each user "consumes" 2 packs
-
-        // Recalculate the available packs after upgrade
-        const availablePacks = numberOfPacks - userPacks;
-
-        // Assign the new subscription to the agency
-        agency.subscription = newSubscription._id;
-        agency.issuedPack = userPacks;
-        agency.packs = availablePacks;
-
-
-        console.log('Updated Agency details:', {
-            subscription: agency.subscription,
-            issuedPack: agency.issuedPack,
-            packs: agency.packs,
+        // Record the one-time payment
+        const newPayment = new PaymentModel({
+            email,
+            plan,
+            amount,
+            reference,
+            orderNumber,
+            status: 'completed',
+            paymentType: 'one-time',
         });
 
-        await agency.save(); // Save the updated agency details
-        console.log('Agency subscription updated successfully');
+        await newPayment.save();
+        await updateAgencySubscription(agency, subscription);
 
         res.status(200).json({
-            message: 'Payment and subscription update successful',
+            message: 'One-time payment recorded successfully',
             orderNumber,
-            availablePacks,
             agency,
         });
     } catch (error) {
-        console.error('Error recording payment or updating subscription:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error recording one-time payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
 
 
+export const recordInstallmentPayment = async (req, res) => {
+    const { email, plan, amount, reference, installmentDuration } = req.body;
+
+    try {
+        // Find the subscription plan
+        const subscription = await Subscription.findOne({ plan });
+        if (!subscription) {
+            return res.status(404).json({ message: 'Subscription plan not found' });
+        }
+
+        const orderNumber = await generateInvoiceNumber();
+
+        // Find the agency by email
+        const agency = await Agency.findOne({ email }).populate('subscription');
+        if (!agency) {
+            return res.status(404).json({ message: 'Agency not found' });
+        }
+
+        // Calculate total amount for the subscription plan
+        const totalAmount = subscription.price; // Assuming the price field exists in the Subscription model
+
+        // Calculate how much each installment should be
+        const installmentAmount = totalAmount / installmentDuration;
+
+        // Record the installment payment
+        const newPayment = new PaymentModel({
+            email,
+            plan,
+            amount, // Current payment amount
+            reference,
+            orderNumber,
+            totalAmount, // Total amount due
+            amountPaid: amount, // First payment amount
+            balance: totalAmount - amount, // Remaining balance
+            installmentDuration,
+            nextDueDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Next due date is in 1 month
+            installmentPayments: [{
+                amount,
+                date: new Date(),
+                status: 'paid',
+            }],
+            status: amount >= totalAmount ? 'completed' : 'partially_paid',
+            paymentType: 'installment',
+        });
+
+        await newPayment.save();
+
+        // Update the agency's subscription after the first installment
+        if (!agency.subscription) {
+            await updateAgencySubscription(agency, subscription);
+        }
+
+
+        res.status(200).json({
+            message: 'Installment payment recorded successfully',
+            orderNumber,
+            balance: newPayment.balance,
+            nextDueDate: newPayment.nextDueDate,
+        });
+    } catch (error) {
+        console.error('Error recording installment payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
