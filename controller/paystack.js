@@ -35,22 +35,16 @@ export const purchase =  async (req, res) => {
     }
 };
 
-
 export const verifyPayment = async (req, res) => {
     const { reference } = req.params;
 
     try {
         const response = await paystack.verifyTransaction({ reference });
-        if (response.body.status === "success") {
-            res.status(200).json(response.body);
-        } else {
-            res.status(400).json({ error: error.message });
-        }
+        res.status(200).json(response.body);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
-
 
 
 
@@ -118,8 +112,11 @@ export const recordInstallmentPayment = async (req, res) => {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
+        if (subscription.paymentType === 'installment') {
         // Calculate total amount for the subscription plan
         const totalAmount = subscription.price; // Assuming the price field exists in the Subscription model
+
+        }
 
         // Calculate how much each installment should be
         const installmentAmount = totalAmount / installmentDuration;
