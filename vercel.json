@@ -15,10 +15,10 @@
   ],
   "crons": [
     {
-      "path": "/api/payment-plan",
+      "path": "/api/payment-plan/check-installment",
       "schedule":"0 6 * * *"
     }, {
-      "path": "/api/payment-plan",
+      "path": "/api/payment-plan/check-installment",
       "schedule":"0 18 * * *"
     }
   ]
