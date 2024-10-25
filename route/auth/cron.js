@@ -9,7 +9,7 @@ import {checkInstallment} from "../../helper/update-status.js";
 const router = express.Router();
 
 // POST route for adding a subscription
-router.get('/check-installment',checkInstallment);
+router.get('/check-installment',checkPaymentPlan);
 
 
 export default router;
