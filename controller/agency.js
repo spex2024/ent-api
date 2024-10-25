@@ -291,7 +291,7 @@ export const agencySignIn = async (req, res) => {
         agency.moneyBalance = moneyBalance.toFixed(2);
 
         await agency.save(); // Save the updated agency document
-
+         await checkAgencySubscriptions()
         // Generate a token for the session
         const payload = {
             agency: {
@@ -313,7 +313,7 @@ export const agencySignIn = async (req, res) => {
         });
 
         res.json({ message: 'Login successful' });
-        checkAgencySubscriptions()
+
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
