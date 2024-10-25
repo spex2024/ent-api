@@ -21,9 +21,6 @@ export const checkInstallment= async ( res ,req) => {
                 const graceEnds = new Date(nextDueDate.getTime() + gracePeriodEnd * 60 * 1000);
                 const timeSinceGraceEnd = Math.ceil((currentDate - graceEnds) / (1000 * 60));
 
-                console.log('Balance:', balance);
-                console.log('Time left until due date:', timeDifferenceInMinutes);
-                console.log('Time left until due date:', timeSinceGraceEnd % 5);
 
                 // 1. Thank-you message for completed payment
                 if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
