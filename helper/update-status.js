@@ -1,7 +1,5 @@
 import Agency from "../model/agency.js";
 import { sendMail } from "./mail.js";
-import cron from "node-cron";
-import checkAgencySubscriptions from "./check-installment.js";
 
 // Function to check agency subscriptions, update their status, and handle notifications
 export const checkInstallment= async ( res ,req) => {
@@ -114,9 +112,3 @@ export const checkInstallment= async ( res ,req) => {
 };
 
 
-
-
-cron.schedule('*/1 * * * *', () => {
-    console.log('Running subscription check...');
-    checkInstallment();
-});

@@ -46,18 +46,6 @@ const checkAgencySubscriptions = async () => {
 const handleNotifications = async (agency, recentPayment, timeDifferenceInMinutes, balance, installmentPayments, notifications, currentDate, nextDueDate, gracePeriodEnd) => {
     // 1. Reminder message (20 minutes before due date)
 
-    if (agency.isActive === true && installmentPayments === "complete" && agency.completeNotificationSent === false) {
-        notifications.push({
-            email: agency.email,
-            subject: "Thank You for Completing Your Payment",
-            message: `<p>Dear ${agency.company}, thank you for completing your installment payment. Your account is now up to date.</p>`
-        });
-        console.log(`Thank-you notification sent to ${agency.email} for payment completion.`);
-        agency.completeNotificationSent = true; // Set the flag to true to prevent multiple thank-you messages
-        await agency.save(); // Persist the update
-    }
-
-
     if (timeDifferenceInMinutes > -14.5 && timeDifferenceInMinutes === -11.5 && installmentPayments === "in-progress" && agency.remainderNotificationSent === false) {
         notifications.push({
             email: agency.email,
