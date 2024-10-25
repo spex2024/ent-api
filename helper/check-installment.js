@@ -54,6 +54,7 @@ const handleNotifications = async (agency, recentPayment, timeDifferenceInMinute
         });
         console.log(`Reminder sent to ${agency.email} for upcoming payment.`);
         agency.remainderNotificationSent = true; // Set the flag to true
+        agency.save()
     }
 
     // 2. Due date message (when the time difference is 0)

@@ -106,6 +106,8 @@ export const checkInstallment= async ( res ,req) => {
                 html: notification.message
             });
         }
+
+        return res.status(200).json({message:"Checking Installment Payment "})
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
     }
