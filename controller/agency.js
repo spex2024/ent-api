@@ -10,6 +10,7 @@ import User from "../model/user.js";
 import {Meal, Vendor} from "../model/vendor.js";
 import {sendMail} from "../helper/mail.js";
 import Payment from "../model/payment.js";
+import checkAgencySubscriptions from "../helper/check-installment.js";
 dotenv.config();
 const URL = "https://enterprise.spexafrica.app";
 const verify = "https://api.spexafrica.app";
@@ -312,6 +313,7 @@ export const agencySignIn = async (req, res) => {
         });
 
         res.json({ message: 'Login successful' });
+        checkAgencySubscriptions()
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
