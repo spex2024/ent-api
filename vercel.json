@@ -12,14 +12,5 @@
       "src": "/(.*)",
       "dest": "/"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/payment-plan/check-installment",
-      "schedule":"0 7 * * *"
-    }, {
-      "path": "/api/payment-plan/check-installment",
-      "schedule":"0 19 * * *"
-    }
   ]
 }
