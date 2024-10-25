@@ -304,6 +304,7 @@ export const agencySignIn = async (req, res) => {
         await agency.save();
 
         res.cookie('token', token, {
+            domain: '.spexafrica.app',
             httpOnly: true,
             sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' in production
             secure: process.env.NODE_ENV === 'production', // Secure flag true only in production

@@ -30,6 +30,12 @@ const AgencySchema = new Schema(
             isActive: { type: Boolean, default: false }, // Assuming isVerified is a boolean
             users: [{ type: Schema.Types.ObjectId, ref: 'User' }],
             vendors: [{ type: Schema.Types.ObjectId, ref: 'Vendor' }],
+            remainderNotificationSent: { type: Boolean, default: false },
+            graceNotificationSent: { type: Boolean, default: false },
+            dueNotificationSent: { type: Boolean, default: false },
+            overDueNotificationSent: { type: Boolean, default: false },
+            completeNotificationSent: { type: Boolean, default: false },
+
     },
     { timestamps: true }
 );

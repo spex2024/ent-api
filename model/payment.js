@@ -13,11 +13,12 @@ const PaymentSchema = new mongoose.Schema({
     balance: { type: Number, default: 0 }, // Remaining balance (installment)
     installmentDuration: { type: Number }, // Duration for installments in months
     nextDueDate: { type: Date }, // When the next installment is due
-    installmentPayments: [{
-        amount: { type: Number },
-        date: { type: Date },
-        status: { type: String, default: 'pending' }, // paid, pending
-    }],
+    installmentPayments: {
+        type: String,
+        enum: ['not-started', 'in-progress', 'complete', 'overdue'],
+        default: 'not-started'
+    },
+
     createdAt: { type: Date, default: Date.now },
 });
 

@@ -20,15 +20,33 @@ const updateAgencySubscription = async (agency, newSubscription) => {
     return agency.save();
 };
 
-export const purchase =  async (req, res) => {
-    const { email, amount } = req.body;
+export const purchase = async (req, res) => {
+    const { email, amount, plan } = req.body;
 
     try {
+        // Fetch the agency details (assuming you have a way to retrieve the agency by email)
+        const agency = await Agency.findOne({ email });
+
+        // Check if the agency already has a completed one-time or installment subscription for the same plan
+        if (agency && agency.subscription) {
+            const { subscription } = agency;
+
+            if (subscription.plan === plan) {
+                if (subscription.paymentType === "one-time") {
+                    return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
+                } else if (subscription.paymentType === "installment" && agency.installmentPayments === "complete") {
+                    return res.status(400).json({ message: "You have already completed this installment plan." });
+                }
+            }
+        }
+
+        // Initialize transaction with Paystack if no existing completed subscription is found
         const response = await paystack.initializeTransaction({
             email,
             amount: amount * 100, // Convert to kobo
             callback_url: req.body.callback_url,
         });
+
         res.status(200).json(response.body);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -75,7 +93,7 @@ export const recordOneTimePayment = async (req, res) => {
             amount,
             reference,
             orderNumber,
-            status: 'completed',
+            status: 'complete',
             paymentType: 'one-time',
         });
 
@@ -120,7 +138,7 @@ export const recordInstallmentPayment = async (req, res) => {
         // Calculate total amount paid so far from previous payments
         const totalPaid = agency.payment.reduce((accum, payment) => {
             if (payment.plan === plan && payment.paymentType === 'installment') {
-                return accum + payment.amountPaid; // Summing amountPaid for relevant installment payments
+                return accum + payment.amount; // Summing amountPaid for relevant installment payments
             }
             return accum;
         }, 0);
@@ -144,17 +162,18 @@ export const recordInstallmentPayment = async (req, res) => {
             balance: balance, // Remaining balance
             installmentDuration,
             nextDueDate,
-            installmentPayments: [{
-                amount,
-                date: new Date(),
-                status: 'paid',
-            }],
             status: newTotalPaid >= totalAmount ? 'completed' : 'partially_paid',
+            installmentPayments: newTotalPaid >= totalAmount ? 'complete' : 'in-progress',
             paymentType: 'installment',
+
         });
 
         await newPayment.save(); // Save the new payment record
-
+            agency.remainderNotificationSent = false
+            agency.graceNotificationSent = false
+            agency. dueNotificationSent = false
+            agency.overDueNotificationSent =false
+            agency.completeNotificationSent =false
         // Add the new payment to the agency's payment array
         agency.payment.push(newPayment._id);
         await agency.save(); // Save the updated agency document
