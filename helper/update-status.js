@@ -2,7 +2,7 @@ import Agency from "../model/agency.js";
 import { sendMail } from "./mail.js";
 
 // Function to check agency subscriptions, update their status, and handle notifications
-export const checkInstallment= async ( res ,req) => {
+export const checkInstallment= async ( req ,res) => {
     try {
         const agencies = await Agency.find().populate('payment');
         const notifications = []; // Array to hold notifications
@@ -31,6 +31,8 @@ export const checkInstallment= async ( res ,req) => {
                     });
                     agency.completeNotificationSent = true;
                     await agency.save();
+                    return res.status(200).json({message:"Payment Complete Sent"})
+
                 }
 
                 // 2. Reminder before due date
@@ -42,6 +44,7 @@ export const checkInstallment= async ( res ,req) => {
                     });
                     agency.remainderNotificationSent = true;
                     await agency.save();
+                    return res.status(200).json({message:"Update reminder sent"})
                 }
 
                 // 3. Due date message
@@ -80,6 +83,7 @@ export const checkInstallment= async ( res ,req) => {
                             });
                             agency.dueNotificationSent = true;
                             await agency.save();
+                            return res.status(200).json({message:"Grace period sent"})
                         }
                     }
 
@@ -92,6 +96,8 @@ export const checkInstallment= async ( res ,req) => {
                         });
                         agency.overDueNotificationSent = true;
                         await agency.save();
+                        return res.status(200).json({message:"Payment Overdue Reminder"})
+
                     }
                 }
             } else {
@@ -106,6 +112,7 @@ export const checkInstallment= async ( res ,req) => {
                 subject: notification.subject,
                 html: notification.message
             });
+            return res.status(200).json({message:"Notification Sent"})
         }
 
         return res.status(200).json({message:"Checking Installment Payment "})
