@@ -31,7 +31,7 @@ export const checkInstallment= async ( req ,res) => {
                     });
                     agency.completeNotificationSent = true;
                     await agency.save();
-                     res.status(200).json({message:"Payment Complete Sent"})
+                    return res.status(200).json({message:"Payment Complete Sent"})
 
                 }
 
@@ -44,7 +44,7 @@ export const checkInstallment= async ( req ,res) => {
                     });
                     agency.remainderNotificationSent = true;
                     await agency.save();
-                     res.status(200).json({message:"Update reminder sent"})
+                    return res.status(200).json({message:"Update reminder sent"})
                 }
 
                 // 3. Due date message
@@ -56,7 +56,7 @@ export const checkInstallment= async ( req ,res) => {
                     });
                     agency.dueNotificationSent = true;
                     await agency.save();
-                    res.status(200).json({message:"Payment Due sent"})
+                    return res.status(200).json({message:"Payment Due sent"})
                 }
 
                 // 4. Overdue and grace period handling
@@ -83,7 +83,7 @@ export const checkInstallment= async ( req ,res) => {
                             });
                             agency.dueNotificationSent = true;
                             await agency.save();
-                            res.status(200).json({message:"Grace period sent"})
+                            return res.status(200).json({message:"Grace period sent"})
                         }
                     }
 
@@ -96,7 +96,7 @@ export const checkInstallment= async ( req ,res) => {
                         });
                         agency.overDueNotificationSent = true;
                         await agency.save();
-                         res.status(200).json({message:"Payment Overdue Reminder"})
+                        return res.status(200).json({message:"Payment Overdue Reminder"})
 
                     }
                 }
@@ -112,10 +112,10 @@ export const checkInstallment= async ( req ,res) => {
                 subject: notification.subject,
                 html: notification.message
             });
-            res.status(200).json({message:"Notification Sent"})
+            return res.status(200).json({message:"Notification Sent"})
         }
 
-         res.status(200).json({message:`Checking Installment Payment ${timeDifferenceInMinutes}`})
+        return res.status(200).json({message:`Checking Installment Payment ${timeDifferenceInMinutes}`})
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
     }
