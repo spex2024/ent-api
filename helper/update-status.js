@@ -115,7 +115,7 @@ export const checkInstallment= async ( req ,res) => {
             return res.status(200).json({message:"Notification Sent"})
         }
 
-        return res.status(200).json({message:"Checking Installment Payment "})
+        return res.status(200).json({message:`Checking Installment Payment ${timeDifferenceInMinutes}`})
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
     }
