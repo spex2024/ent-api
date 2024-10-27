@@ -83,7 +83,7 @@ export const checkInstallment= async ( req ,res) => {
                             });
                             agency.dueNotificationSent = true;
                             await agency.save();
-                            return res.status(200).json({message:"Grace period sent"})
+                            res.status(200).json({message:"Grace period sent"})
                         }
                     }
 
