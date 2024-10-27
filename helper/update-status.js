@@ -53,6 +53,7 @@ export const checkInstallment= async ( res ,req) => {
                     });
                     agency.dueNotificationSent = true;
                     await agency.save();
+                    return res.status(200).json({message:"Payment Due sent"})
                 }
 
                 // 4. Overdue and grace period handling
