@@ -12,8 +12,9 @@ import subscriptionPayment from './route/auth/payment.js'
 import cookieParser from "cookie-parser";
 import {v2 as cloudinary} from "cloudinary";
 import mongoose from "mongoose";
-import checkAgencySubscriptions from "./helper/check-installment.js";
+import checkAgencySubscriptions, {checkInstallment} from "./helper/check-installment.js";
 import checkPaymentPlan from "./route/auth/cron.js";
+
 
 dotenv.config();
 
@@ -53,7 +54,7 @@ app.get('/', (req, res) => {
     res.send('Hello World')
 })
 
-checkAgencySubscriptions()
+checkInstallment()
 
 
 mongoose.connect(process.env.MONGODB_URI)
