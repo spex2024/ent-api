@@ -28,7 +28,7 @@ export const checkInstallment= async ( req ,res) => {
                     console.log(nextDueDate);
 
                     // 1. Thank-you message for completed payment
-                    if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
+                    if (agency.isActive && installmentPayments === "complete" && agency.completeNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Thank You for Completing Your Payment",
@@ -39,7 +39,7 @@ export const checkInstallment= async ( req ,res) => {
                     }
 
                     // 2. Reminder before due date (now using a range for time difference)
-                    if (timeDifferenceInMinutes >= -15 && timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && !agency.remainderNotificationSent) {
+                    if (timeDifferenceInMinutes >= -15 && timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && agency.remainderNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Upcoming Payment Reminder",
@@ -50,7 +50,7 @@ export const checkInstallment= async ( req ,res) => {
                     }
 
                     // 3. Due date message
-                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && !agency.dueNotificationSent) {
+                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.dueNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Payment Due Now",
@@ -64,7 +64,7 @@ export const checkInstallment= async ( req ,res) => {
                     if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress") {
                         if (balance < 0) {
                             const timeAfterDue = timeDifferenceInMinutes + gracePeriodEnd;
-                            if (timeAfterDue <= gracePeriodEnd && !agency.graceNotificationSent) {
+                            if (timeAfterDue <= gracePeriodEnd && agency.graceNotificationSent === false) {
                                 notifications.push({
                                     email: agency.email,
                                     subject: "Grace Period Notification",
