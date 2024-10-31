@@ -46,18 +46,19 @@ export const checkInstallment = async (req, res) => {
                     }
 
                     // 3. Deactivate immediately when due date is reached
-                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.isActive && agency.dueNotificationSent === false) {
-                        agency.isActive = false;
-                        agency.packs = 0
-                        recentPayment.installmentPayments = "overdue";
-                        await recentPayment.save();
+                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.isActive === true && agency.dueNotificationSent === false) {
+
 
                         notifications.push({
                             email: agency.email,
                             subject: "Account Deactivated - Payment Due",
                             message: `<p>Dear ${agency.company}, your payment is overdue, and your account has been deactivated. Please settle the balance to reactivate your account.</p>`
                         });
+                        agency.isActive = false;
+                        agency.packs = 0
+                        recentPayment.installmentPayments = "overdue";
                         agency.dueNotificationSent = true;
+                        await recentPayment.save();
                         await agency.save();
                     }
 
