@@ -7,7 +7,7 @@ export const checkInstallment = async (req, res) => {
         const notifications = []; // Array to hold notifications
 
         for (const agency of agencies) {
-            const paymentsWithNextDueDate = agency.payment.filter(payment => payment.nextDueDate);
+            const paymentsWithNextDueDate = agency.payment.filter(payment => payment.createdAt);
 
             if (paymentsWithNextDueDate.length > 0) {
                 const recentPayment = paymentsWithNextDueDate
@@ -16,14 +16,21 @@ export const checkInstallment = async (req, res) => {
                 if (recentPayment) {
                     const { installmentPayments } = recentPayment;
                     const currentDate = new Date();
-                    const nextDueDate = new Date(recentPayment.nextDueDate);
-                    const timeDifferenceInMinutes = Math.ceil((nextDueDate - currentDate) / (1000 * 60));
 
-                    console.log(timeDifferenceInMinutes);
-                    console.log(nextDueDate);
+                    // Set nextDueDate to 2 hours after createdAt
+                    const nextDueDate = new Date(recentPayment.createdAt);
+                    nextDueDate.setHours(nextDueDate.getHours() + 2);
+
+                    // Calculate time difference in minutes
+                    const timeDifferenceInMinutes = Math.floor((nextDueDate - currentDate) / (1000 * 60));
+                    const timeDifferenceInHours = Math.floor(timeDifferenceInMinutes / 60);
+
+                    console.log(`Time Difference: ${timeDifferenceInMinutes} minutes`);
+                    console.log(`Time Difference: ${timeDifferenceInHours} minutes`);
+                    console.log(`Next Due Date: ${nextDueDate}`);
 
                     // 1. Thank-you message for completed payment
-                    if (agency.isActive && installmentPayments === "complete" && agency.completeNotificationSent === false) {
+                    if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
                         notifications.push({
                             email: agency.email,
                             subject: "Thank You for Completing Your Payment",
@@ -31,23 +38,21 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.completeNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message:"Payment Completion email sent"});
                     }
 
-                    // 2. Reminder one hour before due date
-                    if (timeDifferenceInMinutes <= 60 && timeDifferenceInMinutes > 0 && installmentPayments === "in-progress" && agency.remainderNotificationSent === false) {
+                    // 2. Reminder one hour (60 minutes) before due date
+                    if (timeDifferenceInMinutes <= 60 && timeDifferenceInMinutes > 0 && installmentPayments === "in-progress" && !agency.remainderNotificationSent) {
                         notifications.push({
                             email: agency.email,
                             subject: "Upcoming Payment Reminder",
-                            message: `<p>Dear ${agency.company}, your next installment payment is due in ${timeDifferenceInMinutes} minutes. Please ensure you complete it to avoid deactivation.</p>`
+                            message: `<p>Dear ${agency.company}, your next installment payment is due in approximately ${timeDifferenceInMinutes} minutes. Please ensure you complete it to avoid deactivation.</p>`
                         });
                         agency.remainderNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message:"Payment Reminder email sent"});
                     }
 
                     // 3. Deactivate immediately when due date is reached
-                    if (timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && agency.isActive === true) {
+                    if (timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && agency.isActive) {
                         agency.isActive = false;
                         notifications.push({
                             email: agency.email,
@@ -59,11 +64,10 @@ export const checkInstallment = async (req, res) => {
                         recentPayment.installmentPayments = "overdue";
                         await recentPayment.save();
                         await agency.save();
-                        res.status(200).json({message:"Deactivation email sent"});
                     }
 
-                    // Periodic overdue reminder every 1 hour
-                    if (!agency.isActive && installmentPayments === "overdue" && timeDifferenceInMinutes % 60 === 0) {
+                    // 4. Periodic overdue reminder every hour if overdue
+                    if (!agency.isActive && installmentPayments === "overdue" && (currentDate.getMinutes() === 0) && !agency.overDueNotificationSent) {
                         notifications.push({
                             email: agency.email,
                             subject: "Overdue Payment Reminder",
@@ -71,12 +75,10 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.overDueNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message: "Overdue email sent successfully"});
                     }
-
                 }
             } else {
-                console.log(`No payments with a next due date found for agency ${agency.email}.`);
+                console.log(`No payments with a created date found for agency ${agency.email}.`);
             }
         }
 
@@ -89,10 +91,7 @@ export const checkInstallment = async (req, res) => {
             });
         }
 
-        res.status(200).json({message:"Success 200 ok"});
-
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
-        res.status(500).json({message: "Internal server error"});
     }
 };
