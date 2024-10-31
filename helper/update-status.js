@@ -71,8 +71,8 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.overDueNotificationSent = true;
                         await agency.save();
+                        res.status(200).json({message:"Over due email sent sucessfully"})
                     }
-                    res.status(200).json({message:"Over due email sent sucessfully"})
                 }
             } else {
                 console.log(`No payments with a next due date found for agency ${agency.email}.`);
