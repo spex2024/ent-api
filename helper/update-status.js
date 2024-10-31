@@ -31,6 +31,7 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.completeNotificationSent = true;
                         await agency.save();
+                        res.status(200).json({message:"Payment Completion email sent"})
                     }
 
                     // 2. Reminder before due date
@@ -42,6 +43,7 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.remainderNotificationSent = true;
                         await agency.save();
+                        res.status(200).json({message:"Payment Reminder email sent"})
                     }
 
                     // 3. Deactivate immediately when due date is reached
@@ -57,6 +59,7 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.dueNotificationSent = true;
                         await agency.save();
+                        res.status(200).json({message:"Deactivation email sent"})
                     }
 
                     // 4. Periodic overdue reminder
@@ -69,6 +72,7 @@ export const checkInstallment = async (req, res) => {
                         agency.overDueNotificationSent = true;
                         await agency.save();
                     }
+                    res.status(200).json({message:"Over due email sent sucessfully"})
                 }
             } else {
                 console.log(`No payments with a next due date found for agency ${agency.email}.`);
