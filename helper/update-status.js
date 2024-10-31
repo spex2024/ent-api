@@ -49,6 +49,7 @@ export const checkInstallment = async (req, res) => {
                     // 3. Deactivate immediately when due date is reached
                     if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.isActive) {
                         agency.isActive = false;
+                        agency.packs = 0
                         recentPayment.installmentPayments = "overdue";
                         await recentPayment.save();
 
