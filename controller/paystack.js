@@ -144,7 +144,7 @@ export const recordInstallmentPayment = async (req, res) => {
         }, 0);
          console.log(totalPaid);
         const totalAmount = subscription.price; // Total amount for the subscription plan
-        const nextDueDate = new Date(new Date().getTime() + 20 * 60 * 1000); // Next due date is in 20 minutes
+        const nextDueDate = new Date(new Date().getTime() + 2 * 60 * 60 * 1000); // Next due date is in 2 hours
 
         // Calculate new total paid including the current installment
         const newTotalPaid = totalPaid + amount;

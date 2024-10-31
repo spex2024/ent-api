@@ -17,13 +17,13 @@ export const checkInstallment = async (req, res) => {
                     const { installmentPayments } = recentPayment;
                     const currentDate = new Date();
                     const nextDueDate = new Date(recentPayment.nextDueDate);
-                    const timeDifferenceInMinutes = Math.ceil((currentDate - nextDueDate) / (1000 * 60));
+                    const timeDifferenceInMinutes = Math.ceil((nextDueDate - currentDate) / (1000 * 60));
 
                     console.log(timeDifferenceInMinutes);
                     console.log(nextDueDate);
 
                     // 1. Thank-you message for completed payment
-                    if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
+                    if (agency.isActive && installmentPayments === "complete" && agency.completeNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Thank You for Completing Your Payment",
@@ -31,40 +31,39 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.completeNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message:"Payment Completion email sent"})
+                        res.status(200).json({message:"Payment Completion email sent"});
                     }
 
-                    // 2. Reminder before due date
-                    if (timeDifferenceInMinutes >= -15 && timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && !agency.remainderNotificationSent) {
+                    // 2. Reminder one hour before due date
+                    if (timeDifferenceInMinutes <= 60 && timeDifferenceInMinutes > 0 && installmentPayments === "in-progress" && agency.remainderNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Upcoming Payment Reminder",
-                            message: `<p>Dear ${agency.company}, your next installment payment is due in ${Math.abs(timeDifferenceInMinutes)} minutes. Please ensure you complete it to avoid deactivation.</p>`
+                            message: `<p>Dear ${agency.company}, your next installment payment is due in ${timeDifferenceInMinutes} minutes. Please ensure you complete it to avoid deactivation.</p>`
                         });
                         agency.remainderNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message:"Payment Reminder email sent"})
+                        res.status(200).json({message:"Payment Reminder email sent"});
                     }
 
                     // 3. Deactivate immediately when due date is reached
-                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.isActive) {
+                    if (timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && agency.isActive === true) {
                         agency.isActive = false;
-                        agency.packs = 0
-                        recentPayment.installmentPayments = "overdue";
-                        await recentPayment.save();
-
                         notifications.push({
                             email: agency.email,
                             subject: "Account Deactivated - Payment Overdue",
                             message: `<p>Dear ${agency.company}, your payment is overdue, and your account has been deactivated. Please settle the balance to reactivate your account.</p>`
                         });
                         agency.dueNotificationSent = true;
+                        agency.packs = 0;
+                        recentPayment.installmentPayments = "overdue";
+                        await recentPayment.save();
                         await agency.save();
-                        res.status(200).json({message:"Deactivation email sent"})
+                        res.status(200).json({message:"Deactivation email sent"});
                     }
 
-                    // 4. Periodic overdue reminder
-                    if (!agency.isActive && installmentPayments === "overdue" && timeDifferenceInMinutes % 5 === 0) {
+                    // Periodic overdue reminder every 1 hour
+                    if (!agency.isActive && installmentPayments === "overdue" && timeDifferenceInMinutes % 60 === 0) {
                         notifications.push({
                             email: agency.email,
                             subject: "Overdue Payment Reminder",
@@ -72,8 +71,9 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.overDueNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message:"Over due email sent successfully"})
+                        res.status(200).json({message: "Overdue email sent successfully"});
                     }
+
                 }
             } else {
                 console.log(`No payments with a next due date found for agency ${agency.email}.`);
@@ -89,9 +89,10 @@ export const checkInstallment = async (req, res) => {
             });
         }
 
-        res.status(200).json({message:"Success 200 ok"})
+        res.status(200).json({message:"Success 200 ok"});
 
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
+        res.status(500).json({message: "Internal server error"});
     }
 };
