@@ -71,7 +71,7 @@ export const checkInstallment = async (req, res) => {
                         });
                         agency.overDueNotificationSent = true;
                         await agency.save();
-                        res.status(200).json({message:"Over due email sent sucessfully"})
+                        res.status(200).json({message:"Over due email sent successfully"})
                     }
                 }
             } else {

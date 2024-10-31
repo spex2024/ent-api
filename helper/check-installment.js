@@ -24,7 +24,7 @@ export const checkInstallment = async (req, res) => {
                     console.log(nextDueDate);
 
                     // 1. Thank-you message for completed payment
-                    if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
+                    if (agency.isActive && installmentPayments === "complete" && agency.completeNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Thank You for Completing Your Payment",
@@ -35,7 +35,7 @@ export const checkInstallment = async (req, res) => {
                     }
 
                     // 2. Reminder before due date
-                    if (timeDifferenceInMinutes >= -15 && timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && !agency.remainderNotificationSent) {
+                    if (timeDifferenceInMinutes >= -15 && timeDifferenceInMinutes <= 0 && installmentPayments === "in-progress" && agency.remainderNotificationSent === false) {
                         notifications.push({
                             email: agency.email,
                             subject: "Upcoming Payment Reminder",
@@ -46,7 +46,7 @@ export const checkInstallment = async (req, res) => {
                     }
 
                     // 3. Deactivate immediately when due date is reached
-                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.isActive) {
+                    if (timeDifferenceInMinutes >= 0 && installmentPayments === "in-progress" && agency.isActive && agency.dueNotificationSent === false) {
                         agency.isActive = false;
                         agency.packs = 0
                         recentPayment.installmentPayments = "overdue";
