@@ -25,9 +25,12 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser())
 app.use(cors({
-    origin: ['https://admin.spexafrica.app','https://user.spexafrica.app','https://vendor.spexafrica.app','https://enterprise.spexafrica.app', 'http://localhost:3000','http://localhost:3001'], // Replace with your client URL
+    origin: ['https://admin.spexafrica.app', 'https://user.spexafrica.app', 'https://vendor.spexafrica.app', 'https://enterprise.spexafrica.app', 'http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));
+
 
 
 
