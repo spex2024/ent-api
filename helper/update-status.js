@@ -91,6 +91,8 @@ export const checkInstallment = async (req, res) => {
             });
         }
 
+        res.status(200).json({message:"success ok"})
+
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
     }
