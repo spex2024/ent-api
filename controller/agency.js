@@ -241,7 +241,7 @@ export const agencySignIn = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Find the agency and populate 'users' and 'payment' collections
+        // Find the agency and populate both 'users' and 'payment' collections
         const agency = await Agency.findOne({ email }).populate('users').populate('payment');
         if (!agency) {
             return res.status(400).json({ message: 'Account does not exist or token has expired. Please create an account.' });
@@ -250,15 +250,21 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-
         const totalPaid = agency.payment.reduce((accum, payment) => {
             if (payment.plan === "Silver" && payment.paymentType === 'installment') {
-                return accum + payment.amountPaid;
+                return accum + payment.amountPaid; // Assuming the amountPaid field exists in the Payment model
             }
             return accum;
         }, 0);
 
         console.log(totalPaid);
+
+// // Activate agency if it is not active but has a valid subscription
+//         if (agency.subscription && !agency.isActive ) {
+//             agency.isActive = true;
+//             await agency.save();
+//         }
+
 
         // Continue with the password check and other operations
         const match = await bcrypt.compare(password, agency.password);
@@ -266,41 +272,52 @@ export const agencySignIn = async (req, res) => {
             return res.status(400).json({ message: 'Incorrect password' });
         }
 
-        // Count activePack users and set agency's activePack
+        // Count how many users have activePack = 1
         const activePackCount = agency.users.filter(user => user.activePack === 1).length;
+
+        // Set the agency's activePack to the total count of these users
         agency.activePack = activePackCount;
 
-        // Aggregate points, gramPoints, emissionSaved, and moneyBalance
+        // Aggregate points, gramPoints, emissionSaved, and moneyBalance from users
         const points = agency.users.reduce((total, user) => total + (user.points || 0), 0);
         const gramPoints = agency.users.reduce((total, user) => total + (user.gramPoints || 0), 0);
         const emissionSaved = agency.users.reduce((total, user) => total + (user.emissionSaved || 0), 0);
         const moneyBalance = agency.users.reduce((total, user) => total + (user.moneyBalance || 0), 0);
 
-        // Update agency values and save
+        // Update the agency's values
         agency.points = points;
         agency.gramPoints = gramPoints.toFixed(2);
         agency.emissionSaved = emissionSaved;
         agency.moneyBalance = moneyBalance.toFixed(2);
 
-        await agency.save();
-        await checkAgencySubscriptions();
+        await agency.save(); // Save the updated agency document
+         await checkAgencySubscriptions()
+        // Generate a token for the session
+        const payload = {
+            agency: {
+                id: agency._id,
+                email: agency.email,
+            },
+        };
 
-        // Generate token and save to agency
-        const payload = { agency: { id: agency._id, email: agency.email } };
         const token = generateToken(payload, '1d');
         agency.token = token;
         await agency.save();
 
-        // Set cookies for each domain
-        const cookieOptions = {
+        res.cookie('token', token, {
+            domain: '.spexafrica.app',
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
-            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' in production
+            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
             maxAge: 24 * 60 * 60 * 1000, // 1 day
-        };
-
-        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
-        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        });
+        res.cookie('token', token, {
+            domain: '.spexafrica.site',
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' in production
+            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+        });
 
         res.json({ message: 'Login successful' });
 
@@ -309,7 +326,6 @@ export const agencySignIn = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-
 
 export const signOut = (req, res) => {
     try {
