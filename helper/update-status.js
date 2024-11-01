@@ -17,18 +17,13 @@ export const checkInstallment = async (req, res) => {
                     const { installmentPayments } = recentPayment;
                     const currentDate = new Date();
 
-                    // Set nextDueDate to 2 hours after createdAt
+                    // Set nextDueDate to 24 hours after createdAt
                     const nextDueDate = new Date(recentPayment.createdAt);
-                    nextDueDate.setHours(nextDueDate.getHours() + 2);
+                    nextDueDate.setHours(nextDueDate.getHours() + 24);
 
                     // Calculate time difference in minutes
                     const timeDifferenceInMinutes = Math.floor((nextDueDate - currentDate) / (1000 * 60));
                     const timeDifferenceInHours = Math.floor(timeDifferenceInMinutes / 60);
-
-                    console.log(`Time Difference: ${timeDifferenceInMinutes} minutes`);
-                    console.log(`Time Difference: ${timeDifferenceInHours} minutes`);
-                    console.log(`Next Due Date: ${nextDueDate}`);
-                    console.log('current time',currentDate.getMinutes());
 
                     // 1. Thank-you message for completed payment
                     if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
@@ -41,8 +36,8 @@ export const checkInstallment = async (req, res) => {
                         await agency.save();
                     }
 
-                    // 2. Reminder one hour (60 minutes) before due date
-                    if (timeDifferenceInMinutes <= 60 && timeDifferenceInMinutes > 0 && installmentPayments === "in-progress" && !agency.remainderNotificationSent) {
+                    // 2. Reminder 12 hours (720 minutes) before due date
+                    if (timeDifferenceInMinutes <= 720 && timeDifferenceInMinutes > 0 && installmentPayments === "in-progress" && !agency.remainderNotificationSent) {
                         notifications.push({
                             email: agency.email,
                             subject: "Upcoming Payment Reminder",
@@ -67,8 +62,9 @@ export const checkInstallment = async (req, res) => {
                         await agency.save();
                     }
 
-                    // 4. Periodic overdue reminder every hour if overdue
-                    if (!agency.isActive && installmentPayments === "overdue" && (currentDate.getMinutes() === 0) ) {
+                    // 4. Periodic overdue reminder every 24 hours if overdue
+                    const hoursSinceDeactivation = Math.floor((currentDate - nextDueDate) / (1000 * 60 * 60));
+                    if (!agency.isActive && installmentPayments === "overdue" && hoursSinceDeactivation >= 24 && !agency.overDueNotificationSent) {
                         notifications.push({
                             email: agency.email,
                             subject: "Overdue Payment Reminder",
@@ -92,9 +88,11 @@ export const checkInstallment = async (req, res) => {
             });
         }
 
-        res.status(200).json({message:"success ok"})
+        res.status(200).json({message:"success ok"});
 
     } catch (error) {
         console.error('Error checking agency subscriptions:', error);
+        res.status(500).json({ message: "An error occurred" });
     }
 };
+
