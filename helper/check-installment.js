@@ -28,8 +28,9 @@ export const checkInstallment = async (req, res) => {
                     const timeDifferenceInHours = Math.floor(timeDifferenceInMinutes / 60);
 
                     console.log(`Time Difference: ${timeDifferenceInMinutes} minutes`);
-                    console.log(`Time Difference: ${timeDifferenceInHours} minutes`);
+                    console.log(`Time Difference: ${timeDifferenceInHours} hours`);
                     console.log(`Next Due Date: ${nextDueDate}`);
+                    console.log('current time',currentDate.getMinutes());
 
                     // 1. Thank-you message for completed payment
                     if (agency.isActive && installmentPayments === "complete" && !agency.completeNotificationSent) {
@@ -69,7 +70,7 @@ export const checkInstallment = async (req, res) => {
                     }
 
                     // 4. Periodic overdue reminder every hour if overdue
-                    if (!agency.isActive && installmentPayments === "overdue" && (currentDate.getMinutes() === 0) && !agency.overDueNotificationSent) {
+                    if (!agency.isActive && installmentPayments === "overdue" && (currentDate.getMinutes() === 0) ) {
                         notifications.push({
                             email: agency.email,
                             subject: "Overdue Payment Reminder",
