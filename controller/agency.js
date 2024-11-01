@@ -304,20 +304,18 @@ export const agencySignIn = async (req, res) => {
         agency.token = token;
         await agency.save();
 
-        res.cookie('token', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' in production
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
-        res.cookie('token', token, {
-            domain: '.spexafrica.site',
-            httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' in production
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
+
 
         res.json({ message: 'Login successful' });
 
