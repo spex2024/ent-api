@@ -341,9 +341,9 @@ export const signOut = (req, res) => {
         };
 
         // Set cookie for spexafrica.app and its subdomains
-        res.clearCookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
-        res.clearCookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);
