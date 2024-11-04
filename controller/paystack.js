@@ -33,10 +33,10 @@ export const purchase = async (req, res) => {
             // Allow switching from one-time to installment if requested
           if (subscription.plan === plan && subscription.paymentType === "one-time") {
                 return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
-            } else  (subscription.plan === plan && subscription.paymentType === "installment" && agency.isActive) {
+            } if  (subscription.plan === plan && subscription.paymentType === "installment" && agency.isActive) {
                 return res.status(400).json({ message: "You have already completed this installment plan." });
             }
-
+        }
 
         // Initialize transaction with Paystack
         const response = await paystack.initializeTransaction({
