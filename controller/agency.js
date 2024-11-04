@@ -347,7 +347,7 @@ export const signOut = (req, res) => {
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({message:error.message});
     }
 };
 export const getAllAgencies = async (req, res) => {
