@@ -31,16 +31,12 @@ export const purchase = async (req, res) => {
             const { subscription } = agency;
 
             // Allow switching from one-time to installment if requested
-            if (subscription.plan === plan && subscription.paymentType === "one-time" && req.body.paymentType === "installment") {
-                // Clear current subscription to allow installment switch
-                agency.subscription = null;
-                await agency.save();
-            } else if (subscription.plan === plan && subscription.paymentType === "one-time") {
+          if (subscription.plan === plan && subscription.paymentType === "one-time") {
                 return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
-            } else if (subscription.plan === plan && subscription.paymentType === "installment" && agency.isActive) {
+            } else  (subscription.plan === plan && subscription.paymentType === "installment" && agency.isActive) {
                 return res.status(400).json({ message: "You have already completed this installment plan." });
             }
-        }
+
 
         // Initialize transaction with Paystack
         const response = await paystack.initializeTransaction({
@@ -151,7 +147,8 @@ export const recordInstallmentPayment = async (req, res) => {
 
         // Define nextDueDate for this installment
         const nextDueDate = new Date();
-        nextDueDate.setDate(nextDueDate.getDate() + 1); // 24 hours after payment
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1); // 1 month after payment
+
 
         // Create a new installment payment record
         const newPayment = new PaymentModel({
