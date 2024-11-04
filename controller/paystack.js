@@ -21,7 +21,7 @@ const updateAgencySubscription = async (agency, newSubscription) => {
 };
 
 export const purchase = async (req, res) => {
-    const { email, amount, plan } = req.body;
+    const { email, amount, plan , paymentType } = req.body;
 
     try {
         // Fetch the agency details
@@ -31,10 +31,10 @@ export const purchase = async (req, res) => {
             const { subscription } = agency;
 
             // Allow switching from one-time to installment if requested
-          if (subscription.plan === plan && subscription.paymentType === "one-time") {
-                res.status(400).json({ message: "You are already subscribed to this one-time plan." });
-            } if  (subscription.plan === plan && subscription.paymentType === "installment" && agency.isActive === true) {
-              res.status(400).json({ message: "You have already completed this installment plan." });
+            if (subscription.plan === plan && subscription.paymentType === paymentType) {
+                return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
+            } else if (subscription.plan === plan && subscription.paymentType === paymentType && agency.isActive) {
+                return res.status(400).json({ message: "You have already completed this installment plan." });
             }
         }
 
