@@ -314,7 +314,7 @@ export const agencySignIn = async (req, res) => {
         // Set cookie for spexafrica.app and its subdomains
         res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
-        res.cookie('demo', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
 
 
         res.json({ message: 'Login successful' });
