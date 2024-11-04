@@ -330,13 +330,17 @@ export const signIn = async (req, res) => {
         const payload = { vendor: { id: vendor._id, email: vendor.email } };
         const token = generateToken(payload, '1d');
 
-        res.cookie('vendor', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
 
         res.json({ message: 'Login successful' });
     } catch (error) {
@@ -551,11 +555,14 @@ export const updateVendor = async (req, res) => {
 // Vendor sign-out
 export const signOut = (req, res) => {
     try {
-        res.clearCookie('vendor', {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-        });
+        };
+        // Set cookie for spexafrica.app and its subdomains
+        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);

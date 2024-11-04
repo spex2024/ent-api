@@ -123,13 +123,17 @@ export const signIn = async (req, res) => {
 
         const token = generateToken({ id: admin._id }, '1d');
 
-        res.cookie('admin', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
 
 
 
@@ -143,14 +147,24 @@ export const signIn = async (req, res) => {
 };
 
 export const signOut = (req, res) => {
-    res.cookie('admin', '', {
-        domain: '.spexafrica.app',
+    // res.cookie('admin', '', {
+    //     domain: '.spexafrica.app',
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === 'production',
+    //     maxAge: 0 // Set the cookie to expire immediately
+    // });
+
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 0 // Set the cookie to expire immediately
-    });
+    };
 
-    res.status(200).json({ message: "Sign-out successful" });
+    // Set cookie for spexafrica.app and its subdomains
+    res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
+    // Set cookie for spexafrica.site and its subdomains
+    res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
+    res.status(200).json({ message: 'Logout successful' });
+
 };
 
 export const updateAdmin = async (req, res) => {
