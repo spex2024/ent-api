@@ -327,11 +327,23 @@ export const agencySignIn = async (req, res) => {
 
 export const signOut = (req, res) => {
     try {
-        res.clearCookie('token', {
-            domain: '.spexafrica.app',
+        // res.clearCookie('token', {
+        //     domain: '.spexafrica.app',
+        //     httpOnly: true,
+        //     secure: process.env.NODE_ENV === 'production',
+        //
+        // });
+
+
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-        });
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.clearCookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.clearCookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);
