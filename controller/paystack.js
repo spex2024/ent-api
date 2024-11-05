@@ -21,36 +21,43 @@ const updateAgencySubscription = async (agency, newSubscription) => {
 };
 
 export const purchase = async (req, res) => {
-    const { email, amount, plan , paymentType } = req.body;
+    const { email, amount, plan, callback_url } = req.body;
 
     try {
         // Fetch the agency details
         const agency = await Agency.findOne({ email }).populate('subscription');
 
-        if (agency && agency.subscription) {
-            const { subscription } = agency;
+        // Validate if the agency exists
+        if (!agency) {
+            return res.status(404).json({ message: "Agency not found" });
+        }
 
-            // Allow switching from one-time to installment if requested
-            if (subscription.plan === plan && subscription.paymentType === paymentType) {
+        // Check for an existing subscription and payment type
+        const { subscription } = agency;
+        if (subscription) {
+            if (subscription.paymentType === 'one-time' && subscription.price === amount ) {
                 return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
             }
-            if (subscription.plan === plan && subscription.paymentType === paymentType && agency.isActive) {
-                return res.status(400).json({ message: "You have already completed this installment plan." });
+            if (subscription.paymentType === 'installment' && subscription.price === amount && agency.isActive) {
+                return res.status(400).json({ message: "You are already on this installment plan." });
             }
         }
 
         // Initialize transaction with Paystack
         const response = await paystack.initializeTransaction({
             email,
-            amount: amount * 100,
-            callback_url: req.body.callback_url,
+            amount: amount * 100, // Paystack expects amount in kobo (smallest unit)
+            callback_url, // Use callback_url provided in request
         });
 
+        // If successful, return the Paystack transaction response
         res.status(200).json(response.body);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error during purchase initialization:', error);
+        res.status(500).json({ error: 'Failed to initialize purchase' });
     }
 };
+
 
 
 export const verifyPayment = async (req, res) => {
@@ -136,7 +143,7 @@ export const recordInstallmentPayment = async (req, res) => {
 
         // Calculate total amount paid from previous installment payments
         const totalPaid = agency.payment.reduce((accum, payment) => {
-            if (payment.plan === plan && payment.paymentType === 'installment') {
+            if (payment.plan === plan && payment.paymentType === 'installment' && payment.amount === amount && payment.balance > 0) {
                 return accum + payment.amount;
             }
             return accum;
@@ -179,9 +186,8 @@ export const recordInstallmentPayment = async (req, res) => {
 
         // Update agency payments and subscription
         agency.payment.push(newPayment._id);
-        if (!agency.subscription || agency.subscription.plan !== subscription.plan) {
-            await updateAgencySubscription(agency, subscription);
-        }
+        await updateAgencySubscription(agency, subscription);
+
 
         await agency.save();
 
