@@ -38,7 +38,7 @@ export const purchase = async (req, res) => {
             if (subscription.paymentType === 'one-time' && subscription.price === amount ) {
                 return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
             }
-            if (subscription.paymentType === 'installment' && subscription.price === amount && agency.isActive) {
+            if (subscription.paymentType === 'installment' && subscription.price === amount && agency.isActive && subscription.plan === plan) {
                 return res.status(400).json({ message: "You are already on this installment plan." });
             }
         }
