@@ -361,9 +361,9 @@ export const signIn = async (req, res) => {
         };
 
         // Set cookie for spexafrica.app and its subdomains
-        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        res.cookie('user', token, { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
-        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('user', token, { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Login successful' });
     } catch (error) {
         console.error(error.message);
@@ -472,9 +472,9 @@ export const signOut = (req, res) => {
             secure: process.env.NODE_ENV === 'production',
         };
         // Set cookie for spexafrica.app and its subdomains
-        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
+        res.clearCookie('user',  { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
-        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
+        res.clearCookie('user',  { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);

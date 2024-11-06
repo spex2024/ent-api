@@ -131,9 +131,9 @@ export const signIn = async (req, res) => {
         };
 
         // Set cookie for spexafrica.app and its subdomains
-        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        res.cookie('admin', token, { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
-        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('admin', token, { ...cookieOptions, domain: '.spexafrica.site' });
 
 
 
@@ -160,9 +160,9 @@ export const signOut = (req, res) => {
     };
 
     // Set cookie for spexafrica.app and its subdomains
-    res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
+    res.clearCookie('admin',  { ...cookieOptions, domain: '.spexafrica.app' });
     // Set cookie for spexafrica.site and its subdomains
-    res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
+    res.clearCookie('admin',  { ...cookieOptions, domain: '.spexafrica.site' });
     res.status(200).json({ message: 'Logout successful' });
 
 };
