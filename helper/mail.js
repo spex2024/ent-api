@@ -18,9 +18,10 @@ export const sendMail = async ({ to, subject, template, context }) => {
     try {
         // Render the EJS template
         const html = await ejs.renderFile(
-            path.join(__dirname, `views/emails/${template}.ejs`),
+            path.join(__dirname, `../views/emails/${template}.ejs`),  // Adjusted path
             context
         );
+
 
         // Use Resend to send the email
         const email = await resend.emails.send({

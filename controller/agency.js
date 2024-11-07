@@ -12,13 +12,24 @@ import {sendMail} from "../helper/mail.js";
 import Payment from "../model/payment.js";
 import checkAgencySubscriptions from "../helper/check-installment.js";
 dotenv.config();
-const URL = "https://enterprise.spexafrica.app";
-const verify = "https://api.spexafrica.app";
+const URL_APP = "https://enterprise.spexafrica.app";
+const URL_SITE = "https://enterprise.spexafrica.site";
+const VERIFY_APP = "https://api.spexafrica.app";
+const VERIFY_SITE = "https://api.spexafrica.site";
+
+const getUrlBasedOnReferer = (req) => {
+    const referer = req.headers.referer || req.headers.origin || '';
+    if (referer.includes('.site')) {
+        return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
+    }
+    return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
+};
 
 
-
-const sendVerificationEmail = async (agency, emailToken) => {
-    const url = `${verify}/api/enterprise/verify/${emailToken}`;
+const sendVerificationEmail = async (agency, emailToken, req) => {
+    const { verifyUrl } = getUrlBasedOnReferer(req);
+    const url = `${verifyUrl}/api/enterprise/verify/${emailToken}`;
+    console.log(verifyUrl)
     await sendMail({
         to: agency.email,
         subject: 'Account Verification',
@@ -26,31 +37,21 @@ const sendVerificationEmail = async (agency, emailToken) => {
         context: {
             username: agency.company,
             verificationLink: url,
-            code:agency.code,
+            code: agency.code,
         }
     });
-
-
-    // await sendMail({
-    //     to: agency.email,
-    //     subject: 'Verify your email',
-    //     html: `Thanks for signing up on spex platform , Company Name: ${agency.company}, Account ID: ${agency.code}. Click <a href="${url}">here</a> to verify your email.`
-    // });
-
 };
-const sendResetEmail = async (agency, resetToken) => {
-    const url = `${URL}/reset/password-reset?token=${resetToken}`;
-    // transporter.sendMail({
-    //     to: agency.email,
-    //     subject: 'Password Reset Request',
-    //     html: `Click <a href="${url}">here</a> to reset your password.`,
-    // });
+const sendResetEmail = async (agency, resetToken, req) => {
+    const { baseUrl } = getUrlBasedOnReferer(req);
+    const url = `${baseUrl}/reset/password-reset?token=${resetToken}`;
+
     await sendMail({
         to: agency.email,
         subject: 'Password Reset Request',
         html: `Click <a href="${url}">here</a> to reset your password.`,
     });
 };
+
 // Function to generate initials from company and branch
 const generateInitials = (company, branch) => {
     const companyParts = company.split(' '); // Split company into parts by spaces
@@ -153,7 +154,7 @@ export const agencySignUp = async (req, res) => {
                 imagePublicId: uploadedPhoto.public_id
             });
 
-            await sendVerificationEmail(agency, token); // Send verification email with JWT token
+            await sendVerificationEmail(agency, token , req); // Send verification email with JWT token
 
             setTimeout(async () => {
                 const agencyToDelete = await Agency.findOne({ email, token });
@@ -174,32 +175,28 @@ export const verifyAgencyEmail = async (req, res) => {
     const token = req.params.token;
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify JWT token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await Agency.findOne({ email: decoded.email });
 
-        // Check if the user exists
         if (!user) {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        // Check if the user is already verified
         if (user.isVerified) {
-            return res.redirect(`${URL}/verify?status=verified`);
+            return res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=verified`);
         }
 
         const agencyEmail = decoded.email;
-
         const agency = await Agency.findOneAndUpdate({ email: agencyEmail }, { isVerified: true });
 
         if (!agency) {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        res.redirect(`${URL}/verify?status=success`); // Redirect on successful verification
-
+        res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=success`);
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
-            return res.redirect(`${URL}/verify?status=expired`);
+            return res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=expired`);
         }
         console.error(error.message);
         res.status(500).send('Server Error');
@@ -225,7 +222,7 @@ export const resendVerificationEmail = async (req, res) => {
         // Generate a new verification token
         const token = jwt.sign({ email: agency.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        await sendVerificationEmail(agency, token);
+        await sendVerificationEmail(agency, token ,req);
 
         res.status(200).json({ message: 'Verification email sent successfully' });
     } catch (error) {
