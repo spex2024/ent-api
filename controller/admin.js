@@ -8,7 +8,7 @@ import User from "../model/user.js";
 import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
-import {sendMail, sendSuccessMail, verifyEmail} from "../helper/mail.js";
+import {sendMail} from "../helper/mail.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });

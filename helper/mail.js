@@ -1,24 +1,27 @@
-import { Resend } from "resend";
+import ejs from "ejs";
+import path from "path";
 import dotenv from 'dotenv';
-import nodemailer from "nodemailer";
-dotenv.config();
-const api = process.env.RESEND_API;
-const resend = new Resend(`${process.env.RESEND_API}`);
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // Use `true` for port 465, `false` for all other ports
-    auth: {
-        user: "spexdev95@gmail.com",
-        pass: process.env.APP,
-    },
-});
+import { fileURLToPath } from 'url';
+import { Resend } from "resend";
 
+dotenv.config();
+
+// Manually define __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize Resend API
+const resend = new Resend(process.env.RESEND_API);
 
 // Reusable sendMail function
-export  const sendMail = async ({ to, subject, html }) => {
+export const sendMail = async ({ to, subject, template, context }) => {
     try {
+        // Render the EJS template
+        const html = await ejs.renderFile(
+            path.join(__dirname, `views/emails/${template}.ejs`),
+            context
+        );
+
         // Use Resend to send the email
         const email = await resend.emails.send({
             from: 'hello@spexafrica.app', // Replace with your verified sender email
@@ -28,45 +31,10 @@ export  const sendMail = async ({ to, subject, html }) => {
         });
 
         // Log the sent email response
-        console.log('Email sent successfully');
+        console.log('Email sent successfully:', email);
         return email;
     } catch (error) {
         console.error('Error sending email:', error);
         throw new Error('Failed to send email');
     }
 };
-
-export const sendSuccessMail = ({ to, subject, html }) => {
-    transporter.sendMail({
-        to,
-        subject,
-        html,
-    });
-}
-
-export const verifyEmail =  ({subject,html}) => {
-    try {
-        nodemailer
-            .createTransport({
-                service: "gmail",
-                host: "smtp.gmail.com",
-                port: 465,
-                secure: true, // Use `true` for port 465, `false` for all other ports
-                auth: {
-                    user: "spexdev95@gmail.com",
-                    pass: process.env.APP,
-                },
-            })
-            .sendMail({
-                from: 'spexdev95@gmail.com',
-                to: 'ekowfirmino@gmail.com',
-                subject,
-                html,
-            })
-        console.log('Email sent to ')
-    } catch (e) {
-        console.error(e)
-    }
-
-}
-

@@ -17,29 +17,25 @@ const verify = "https://api.spexafrica.app";
 
 
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // Use `true` for port 465, `false` for all other ports
-    auth: {
-        user: "spexdev95@gmail.com",
-        pass: process.env.APP,
-    },
-});
 const sendVerificationEmail = async (agency, emailToken) => {
     const url = `${verify}/api/enterprise/verify/${emailToken}`;
-    // transporter.sendMail({
+    await sendMail({
+        to: agency.email,
+        subject: 'Account Verification',
+        template: 'verification', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: agency.company,
+            verificationLink: url,
+            code:agency.code,
+        }
+    });
+
+
+    // await sendMail({
     //     to: agency.email,
     //     subject: 'Verify your email',
     //     html: `Thanks for signing up on spex platform , Company Name: ${agency.company}, Account ID: ${agency.code}. Click <a href="${url}">here</a> to verify your email.`
     // });
-
-    await sendMail({
-        to: agency.email,
-        subject: 'Verify your email',
-        html: `Thanks for signing up on spex platform , Company Name: ${agency.company}, Account ID: ${agency.code}. Click <a href="${url}">here</a> to verify your email.`
-    });
 
 };
 const sendResetEmail = async (agency, resetToken) => {
