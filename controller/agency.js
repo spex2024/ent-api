@@ -47,8 +47,12 @@ const sendResetEmail = async (agency, resetToken, req) => {
 
     await sendMail({
         to: agency.email,
-        subject: 'Password Reset Request',
-        html: `Click <a href="${url}">here</a> to reset your password.`,
+        subject: 'Password Reset',
+        template: 'reset', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: agency.company,
+            resetLink: url,
+        }
     });
 };
 

@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Password Reset</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f4f8;
             color: #333;
             line-height: 1.6;
         }
@@ -58,7 +57,7 @@
             transition: background-color 0.3s ease;
         }
         .button:hover {
-            background-color: #2980b9;
+            background-color: #5a9636;
         }
         .footer {
             text-align: center;
@@ -69,7 +68,7 @@
             border-top: 1px solid #71bc44;
         }
         .footer a {
-            color: #3498db;
+            color: #71bc44;
             text-decoration: none;
         }
         .social-icons {
@@ -79,12 +78,8 @@
             display: inline-block;
             margin: 0 10px;
             color: #71bc44;
-            font-size: 24px;
+            font-size: 20px;
             text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        .social-icons a:hover {
-            color: #2980b9;
         }
     </style>
 </head>
@@ -93,23 +88,23 @@
     <div class="logo">
         <img src="https://res.cloudinary.com/ddwet1dzj/image/upload/v1722177650/spex_logo-03_png_dui5ur.png" alt="Company Logo">
     </div>
-    <h1>Verify Your Email Address</h1>
-    <p>Hello <strong><%= username %></strong>,</p>
-    <p>Thanks for signing up on the Spex platform. Account ID: <strong><%= code %></strong>. Click below to verify your email</p>
+    <h1>Reset Your Password</h1>
+    <p>Hello <strong><%%= username %></strong>,</p>
+    <p>We received a request to reset your password for your account. Click the button below to reset your password:</p>
 
     <div class="button-container">
-        <a href="<%= verificationLink %>" class="button">Verify Email</a>
+        <a href="<%%= resetLink %>" class="button">Reset Password</a>
     </div>
 
-    <p>If you didn't create an account with us, you can safely ignore this email.</p>
+    <p>If you didn't request this password reset, you can safely ignore this email. Your password will not change.</p>
 
     <div class="footer">
         <p>Best regards,<br>The Spex Team</p>
         <p>Need help? <a href="mailto:hello@spexafrica.app">Contact our support team</a></p>
         <div class="social-icons">
-            <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
+            <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
             <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
-            <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+            <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
             <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
         </div>
     </div>
