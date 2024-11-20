@@ -15,18 +15,25 @@ dotenv.config();
 
 const URL_APP = "https://vendor.spexafrica.app";
 const URL_SITE = "https://vendor.spexafrica.site";
-const local = "http://localhost:3000"
 const VERIFY_APP = "https://api.spexafrica.app";
 const VERIFY_SITE = "https://api.spexafrica.site";
 
+// Development URLs
+const DEV_SITE_URL = "http://localhost:3000"; // or http://localhost:3001
+const DEV_VERIFY_URL = "http://localhost:8080";
+
 const getUrlBasedOnReferer = (req) => {
     const referer = req.headers.referer || req.headers.origin || '';
-    console.log(req.headers);
-    if (referer.includes('.site') || local) {
+
+    if (referer.includes('localhost')) {
+        return { baseUrl: DEV_SITE_URL, verifyUrl: DEV_VERIFY_URL };
+    } else if (referer.includes('.site')) {
         return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
     }
+
     return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
 };
+
 
 
 const sendVerificationEmail = async (vendor, emailToken, req) => {
@@ -233,7 +240,6 @@ export const addVendor = async (req, res) => {
                 isVerified: true,
             });
 
-            await sendSuccessEmail(vendor)
 
 
             res.status(200).json({ message: "Vendor registered successfully. Check your email for your Account ID" });
@@ -335,6 +341,7 @@ export const signIn = async (req, res) => {
         res.cookie('vendor', token, { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
         res.cookie('vendor', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('vendor', token, { ...cookieOptions, domain: '' });
 
         res.json({ message: 'Login successful' });
     } catch (error) {

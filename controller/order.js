@@ -12,9 +12,10 @@ const generateOrderId = () => {
 
 export const placeOrder = async (req, res) => {
     try {
-        const { meal, options } = req.body;
-
+        const { meal, selectedDays, options } = req.body;
+        console.log(selectedDays, options);
         const token = req.cookies.user; // Assuming user token is stored in cookies
+
         if (!token) {
             return res.status(401).json({ message: 'User not authenticated' });
         }
@@ -22,9 +23,9 @@ export const placeOrder = async (req, res) => {
         const decoded = jwt.decode(token, process.env.JWT_SECRET);
         const userId = decoded?.user?.id; // Extract user ID
 
-        // Validate meal and options
-        if (!meal || !options) {
-            return res.status(400).json({ message: 'Meal and options are required.' });
+        // Validate meal, options, and selectedDays
+        if (!meal || !selectedDays || selectedDays.length === 0 || !options) {
+            return res.status(400).json({ message: 'Meal, options, and selected days are required.' });
         }
 
         const vendorId = meal.vendor;
@@ -32,50 +33,72 @@ export const placeOrder = async (req, res) => {
             return res.status(400).json({ message: 'Vendor information is missing.' });
         }
 
-        // Get today's date range
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
+        // Get current date range for the week (Monday to Sunday)
+        const startOfWeek = new Date();
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
+        startOfWeek.setHours(0, 0, 0, 0);
 
-        // Check for completed orders today
-        const existingCompletedOrder = await Order.find({
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        // Fetch orders for the current week
+        const existingOrders = await Order.find({
             user: userId,
-            status: 'completed',
-            createdAt: { $gte: startOfDay, $lte: endOfDay },
+            createdAt: { $gte: startOfWeek, $lte: endOfWeek },
         });
 
-        if (existingCompletedOrder.length > 0) {
-            return res.status(400).json({ message: 'You have already placed a completed order today.' });
+        // Check if the user has already reached the weekly limit
+        if (existingOrders.length >= 5) {
+            return res.status(400).json({ message: 'You have reached your weekly order limit of 5 orders.' });
         }
 
-       // Check for pending orders
-        const pendingOrders = await Order.find({
-            user: userId,
-            status: 'pending',
-        });
+        // Function to get day name from a date
+        const getDayName = (date) => {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return days[date.getDay()];
+        };
 
-        if (pendingOrders.length > 0) {
-            return res.json({ message: 'You cannot place a new order until pending orders are completed.' });
+        // Check if a meal has already been selected on the specified days
+        for (let day of selectedDays) {
+            const dayDate = new Date(day);
+            const selectedDayName = getDayName(dayDate);
+
+            for (let order of existingOrders) {
+                for (let existingDay of order.selectedDays) {
+                    const existingDayDate = new Date(existingDay);
+                    const existingDayName = getDayName(existingDayDate);
+
+                    // Check for a matching day with the same meal ID
+                    if (selectedDayName === existingDayName && order.mealId.toString() === meal.id.toString()) {
+                        return res.status(400).json({
+                            message: `You have already selected this meal on ${selectedDayName}. Please choose a different day or meal.`,
+                        });
+                    }
+
+                    // Check if any order exists on the same day
+                    if (selectedDayName === existingDayName) {
+                        return res.status(400).json({
+                            message: `You already have an order on ${selectedDayName}. You cannot place another order on the same day.`,
+                        });
+                    }
+                }
+            }
         }
 
-        const meals = [{
-            mealId: meal.id,
-            main: meal.main,
-            price: meal.price,
-            protein: options.protein,
-            sauce: options.sauce || '',
-            extras: options.extras || '',
-        }];
-
-        const customOrderId = generateOrderId();
+        // Generate custom order ID
+        let customOrderId = generateOrderId();
 
         // Create the new order
         const order = await Order.create({
             orderId: customOrderId,
             user: userId,
             vendor: vendorId,
-            meals,
+            mealId: meal.id,
+            mealName: meal.mealName, // Assuming `meal.mealName` is available
+            price: meal.price,
+            selectedDays: selectedDays,
+            options: options,
             status: 'pending',
             imageUrl: meal.imageUrl,
             quantity: meal.quantity || 1,
@@ -92,6 +115,8 @@ export const placeOrder = async (req, res) => {
     }
 };
 
+
+
 export const completeOrder = async (req, res) => {
     try {
         const { orderId } = req.body;
@@ -100,6 +125,10 @@ export const completeOrder = async (req, res) => {
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
+
+        // Ensure that the meals array exists and is an array before performing reduce
+        const meals = Array.isArray(order.meals) ? order.meals : [];
+        const totalPrice = meals.reduce((sum, meal) => sum + meal.price, 0);
 
         // Mark the order as completed
         order.status = 'completed';
@@ -110,7 +139,6 @@ export const completeOrder = async (req, res) => {
             return res.status(404).json({ message: 'Vendor not found' });
         }
 
-        const totalPrice = order.meals.reduce((sum, meal) => sum + meal.price, 0);
         vendor.completedOrders += 1;
         vendor.totalSales += totalPrice;
         vendor.totalAmount += totalPrice;
@@ -120,20 +148,21 @@ export const completeOrder = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        console.log(user)
+        console.log(user);
+
         let pack = await Pack.findOne({ userCode: user.code });
+        if (pack) {
+            pack.status = 'active';
+            if (!pack.quantity) {
+                pack.quantity = 2;
+            }
+            await pack.save();
+        }
+        console.log(pack);
 
-       pack.status = 'active';
-       if(!pack.quantity){
-           pack.quantity = 2;
-       }
-        await pack.save();
-        console.log(pack)
         user.activePack = (user.activePack || 0) + 1; // Increment user's active pack
-         user.agency.activePack = (user.agency.activePack || 0) + 1; // Increment agency's active pack
+        user.agency.activePack = (user.agency.activePack || 0) + 1; // Increment agency's active pack
         await user.save();
-
-        // Optionally create or update a pack here (not included in the original code)
 
         return res.status(200).json({ message: 'Order marked as completed and user active pack updated', activePackNumber: user.activePack });
     } catch (error) {
@@ -141,6 +170,7 @@ export const completeOrder = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 };
+
 
 export const cancelOrder = async (req, res) => {
     try {
@@ -224,7 +254,8 @@ export const getOrdersByUserId = async (req, res) => {
             return res.status(401).json({ message: 'User not authenticated' });
         }
 
-        const orders = await Order.find({ user: userId }).populate('vendor meals');
+        const orders = await Order.find({ user: userId }).populate('vendor');
+        console.log(orders)
 
         if (orders.length === 0) {
             return res.status(404).json({ message: 'No orders found for this user' });

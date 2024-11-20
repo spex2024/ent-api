@@ -23,28 +23,27 @@ const vendorSchema = new Schema({
 }, { timestamps: true });
 // Define the schema for Meal
 const mealSchema = new Schema({
-    vendor: { type: Schema.Types.ObjectId, ref: 'Vendor', },
-    main: {
-        name: { type: String, required: true },
-        price: { type: Number, required: true },
-        description: { type: String, required: true }
-    },
+    vendor: { type: Schema.Types.ObjectId, ref: 'Vendor' },
+    mealName: { type: String, required: true },
+    description: { type: String, required: true },
+    daysAvailable: [{
+        type: String, required:true
+    }],
     protein: [{
-        name: { type: String },
-
+        type: String, required:true
     }],
     sauce: [{
-        name: { type: String },
-
+        type: String, required:true
     }],
-    extras: [{
-        name: { type: String, },
-
+    extra: [{
+        type: String, required:true
     }],
+
+    price: { type: Number, required: true }, // Added price field
     imageUrl: { type: String, required: true },
-
     imagePublicId: { type: String, required: true },
-}, {timestamps:true});
+}, { timestamps: true });
+
 
 // Create Vendor model
 const Vendor = mongoose.model('Vendor', vendorSchema);

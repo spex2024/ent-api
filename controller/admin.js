@@ -82,15 +82,15 @@ export const createAdmin = async (req, res) => {
                 imageUrl,
                 imagePublicId,
             });
-            await  sendMail({  to: email,
-                subject: 'Sign Up Success',
-                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
-
-            sendSuccessMail({
-                to: email,
-                subject: 'Sign Up Success',
-                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
-            res.status(200).json({ message: "Admin created successfully", admin });
+            // await  sendMail({  to: email,
+            //     subject: 'Sign Up Success',
+            //     html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
+            //
+            // sendSuccessMail({
+            //     to: email,
+            //     subject: 'Sign Up Success',
+            //     html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
+            // res.status(200).json({ message: "Admin created successfully", admin });
 
         } catch (error) {
             console.error(error);
@@ -134,6 +134,7 @@ export const signIn = async (req, res) => {
         res.cookie('admin', token, { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
         res.cookie('admin', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('admin', token, { ...cookieOptions, domain: '' });
 
 
 
@@ -340,7 +341,7 @@ export const getAllOrders = async (req, res) => {
             path: 'user',
             populate:'agency',
 
-        }).populate('meals').populate('vendor');
+        }).populate('vendor');
         res.status(200).json(orders);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching orders', error });

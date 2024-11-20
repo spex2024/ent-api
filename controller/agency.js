@@ -17,13 +17,22 @@ const URL_SITE = "https://enterprise.spexafrica.site";
 const VERIFY_APP = "https://api.spexafrica.app";
 const VERIFY_SITE = "https://api.spexafrica.site";
 
+// Development URLs
+const DEV_SITE_URL = "http://localhost:3000"; // or http://localhost:3001
+const DEV_VERIFY_URL = "http://localhost:8080";
+
 const getUrlBasedOnReferer = (req) => {
     const referer = req.headers.referer || req.headers.origin || '';
-    if (referer.includes('.site')) {
+
+    if (referer.includes('localhost')) {
+        return { baseUrl: DEV_SITE_URL, verifyUrl: DEV_VERIFY_URL };
+    } else if (referer.includes('.site')) {
         return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
     }
+
     return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
 };
+
 
 
 const sendVerificationEmail = async (agency, emailToken, req) => {
@@ -342,6 +351,7 @@ export const signOut = (req, res) => {
         res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
         res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
+        res.clearCookie('token',  { ...cookieOptions });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);

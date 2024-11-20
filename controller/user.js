@@ -22,17 +22,22 @@ const local = "http://localhost:3000";
 const VERIFY_APP = "https://api.spexafrica.app";
 const VERIFY_SITE = "https://api.spexafrica.site";
 
+// Development URLs
+const DEV_SITE_URL = "http://localhost:3000"; // or http://localhost:3001
+const DEV_VERIFY_URL = "http://localhost:8080";
+
 const getUrlBasedOnReferer = (req) => {
     const referer = req.headers.referer || req.headers.origin || '';
-    console.log('Headers:', req.headers);
-    console.log('Referer:', referer);
 
-    // Check if the referer includes '.site' or matches the `local` URL
-    if (referer.includes('.site') || referer.includes(local)) {
+    if (referer.includes('localhost')) {
+        return { baseUrl: DEV_SITE_URL, verifyUrl: DEV_VERIFY_URL };
+    } else if (referer.includes('.site')) {
         return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
     }
+
     return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
 };
+
 
 
 const sendVerificationEmail = async (user, emailToken, req) => {
@@ -367,6 +372,7 @@ export const signIn = async (req, res) => {
         res.cookie('user', token, { ...cookieOptions, domain: '.spexafrica.app' });
         // Set cookie for spexafrica.site and its subdomains
         res.cookie('user', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('user', token, { ...cookieOptions, domain: '' });
         res.status(200).json({ message: 'Login successful' });
     } catch (error) {
         console.error(error.message);
