@@ -4,7 +4,7 @@ const SubscriptionSchema = new mongoose.Schema({
     plan: {
         type: String,
         required: true,
-        enum: ['Gold', 'Silver', 'Bronze'], // Define the plans here
+
     },
     price: {
         type: Number,
