@@ -1,26 +1,65 @@
-// Initialize a payment
 import paystack from "../helper/paystack-service.js";
 import generateInvoiceNumber from "../helper/order-number.js";
 import PaymentModel from "../model/payment.js";
 import Agency from "../model/agency.js";
 import Subscription from "../model/add-subscription.js";
 
-export const purchase =  async (req, res) => {
-    const { email, amount } = req.body;
+// Helper function for updating agency subscription
+const updateAgencySubscription = async (agency, newSubscription) => {
+    const numberOfStaff = newSubscription.staff || 0;
+    const numberOfPacks = numberOfStaff * 2;
+    const numberOfUsers = agency.users ? agency.users.length : 0;
+    const userPacks = numberOfUsers * 2;
+    const availablePacks = numberOfPacks - userPacks;
+
+    agency.subscription = newSubscription._id;
+    agency.issuedPack = userPacks;
+    agency.packs = availablePacks;
+    agency.isActive = true;
+
+    return agency.save();
+};
+
+export const purchase = async (req, res) => {
+    const { email, amount, plan, callback_url } = req.body;
 
     try {
+        // Fetch the agency details
+        const agency = await Agency.findOne({ email }).populate('subscription');
+
+        // Validate if the agency exists
+        if (!agency) {
+            return res.status(404).json({ message: "Agency not found" });
+        }
+
+        // Check for an existing subscription and payment type
+        const { subscription } = agency;
+        if (subscription) {
+            if (subscription.paymentType === 'one-time' && subscription.price === amount ) {
+                return res.status(400).json({ message: "You are already subscribed to this one-time plan." });
+            }
+            if (subscription.paymentType === 'installment' && subscription.price === amount && agency.isActive && subscription.plan === plan) {
+                return res.status(400).json({ message: "You are already on this installment plan." });
+            }
+        }
+
+        // Initialize transaction with Paystack
         const response = await paystack.initializeTransaction({
             email,
-            amount: amount * 100, // Convert to kobo
-            callback_url: req.body.callback_url,
+            amount: amount * 100, // Paystack expects amount in kobo (smallest unit)
+            callback_url, // Use callback_url provided in request
         });
+
+        // If successful, return the Paystack transaction response
         res.status(200).json(response.body);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error during purchase initialization:', error);
+        res.status(500).json({ error: 'Failed to initialize purchase' });
     }
 };
 
-// Verify payment
+
+
 export const verifyPayment = async (req, res) => {
     const { reference } = req.params;
 
@@ -34,27 +73,13 @@ export const verifyPayment = async (req, res) => {
 
 
 
-// Function to record payment and link subscription with agency
-export const recordPayment = async (req, res) => {
+
+export const recordOneTimePayment = async (req, res) => {
     const { email, plan, amount, reference } = req.body;
-    console.log(email, plan, amount, reference);
 
     try {
-        // Generate invoice number
+        // Generate an invoice number
         const orderNumber = await generateInvoiceNumber();
-        console.log('Generated Order Number:', orderNumber);
-
-        // Record the payment
-        const newPayment = new PaymentModel({
-            email,
-            plan,
-            amount,
-            reference,
-            orderNumber,
-            status: 'success',
-        });
-        await newPayment.save();
-        console.log('Payment recorded successfully');
 
         // Find the agency by email
         const agency = await Agency.findOne({ email }).populate('subscription');
@@ -62,56 +87,119 @@ export const recordPayment = async (req, res) => {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        console.log('Agency found:', agency);
-
-        // Find the new subscription by plan
-        const newSubscription = await Subscription.findOne({ plan });
-        if (!newSubscription) {
+        // Find the subscription plan by name
+        const subscription = await Subscription.findOne({ plan });
+        if (!subscription) {
             return res.status(404).json({ message: 'Subscription plan not found' });
         }
 
-        console.log('New Subscription found:', newSubscription);
-
-        // Check if the agency already has a subscription (i.e., upgrade scenario)
-        if (agency.subscription) {
-            console.log('Upgrading subscription from:', agency.subscription.plan, 'to:', newSubscription.plan);
-        }
-        agency.isActive = true
-        // Get the number of staff from the new subscription
-        const numberOfStaff = newSubscription.staff || 0; // Assuming `staff` is a field in Subscription
-        const numberOfPacks = numberOfStaff * 2; // Calculate packs based on staff count
-
-        // Get the current number of users in the agency
-        const numberOfUsers = agency.users ? agency.users.length : 0;
-        const userPacks = numberOfUsers * 2; // Each user "consumes" 2 packs
-
-        // Recalculate the available packs after upgrade
-        const availablePacks = numberOfPacks - userPacks;
-
-        // Assign the new subscription to the agency
-        agency.subscription = newSubscription._id;
-        agency.issuedPack = userPacks;
-        agency.packs = availablePacks;
-
-
-        console.log('Updated Agency details:', {
-            subscription: agency.subscription,
-            issuedPack: agency.issuedPack,
-            packs: agency.packs,
+        // Record the one-time payment
+        const newPayment = new PaymentModel({
+            email,
+            plan,
+            amount,
+            reference,
+            orderNumber,
+            status: 'complete',
+            paymentType: 'one-time',
         });
 
-        await agency.save(); // Save the updated agency details
-        console.log('Agency subscription updated successfully');
+        await newPayment.save();
+        agency.payment.push(newPayment._id);
+        await agency.save(); // Save the updated agency document
+        // Update the agency's subscription after the first installment
+        if (!agency.subscription || agency.subscription.plan !== subscription.plan || agency.isActive === false) {
+            await updateAgencySubscription(agency, subscription);
+        }
 
         res.status(200).json({
-            message: 'Payment and subscription update successful',
+            message: 'One-time payment recorded successfully',
             orderNumber,
-            availablePacks,
             agency,
         });
     } catch (error) {
-        console.error('Error recording payment or updating subscription:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error recording one-time payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const recordInstallmentPayment = async (req, res) => {
+    const { email, plan, amount, reference, installmentDuration } = req.body;
+
+    try {
+        // Find the subscription plan
+        const subscription = await Subscription.findOne({ plan });
+        if (!subscription) {
+            return res.status(404).json({ message: 'Subscription plan not found' });
+        }
+
+        const orderNumber = await generateInvoiceNumber();
+
+        // Find the agency by email
+        const agency = await Agency.findOne({ email }).populate('subscription').populate('payment');
+        if (!agency) {
+            return res.status(404).json({ message: 'Agency not found' });
+        }
+
+        // Calculate total amount paid from previous installment payments
+        const totalPaid = agency.payment.reduce((accum, payment) => {
+            if (payment.plan === plan && payment.paymentType === 'installment' && payment.amount === amount && payment.balance > 0) {
+                return accum + payment.amount;
+            }
+            return accum;
+        }, 0);
+
+        const totalAmount = subscription.price;
+        const newTotalPaid = totalPaid + amount;
+        const balance = totalAmount - newTotalPaid;
+
+        // Define nextDueDate for this installment
+        const nextDueDate = new Date();
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1); // 1 month after payment
+
+
+        // Create a new installment payment record
+        const newPayment = new PaymentModel({
+            email,
+            plan,
+            amount,
+            reference,
+            orderNumber,
+            totalAmount,
+            amountPaid: newTotalPaid,
+            balance,
+            installmentDuration,
+            nextDueDate,
+            status: newTotalPaid >= totalAmount ? 'completed' : 'partially_paid',
+            installmentPayments: newTotalPaid >= totalAmount ? 'complete' : 'in-progress',
+            paymentType: 'installment',
+        });
+
+        await newPayment.save();
+
+        // Reset notifications and flags for new installment series
+        agency.remainderNotificationSent = false;
+        agency.graceNotificationSent = false;
+        agency.dueNotificationSent = false;
+        agency.overDueNotificationSent = false;
+        agency.completeNotificationSent = false;
+
+        // Update agency payments and subscription
+        agency.payment.push(newPayment._id);
+        await updateAgencySubscription(agency, subscription);
+
+
+        await agency.save();
+
+        res.status(200).json({
+            message: 'Installment payment recorded successfully',
+            orderNumber,
+            balance,
+            nextDueDate,
+        });
+    } catch (error) {
+        console.error('Error recording installment payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
 

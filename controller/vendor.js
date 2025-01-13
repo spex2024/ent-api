@@ -13,56 +13,56 @@ import {sendMail} from "../helper/mail.js";
 
 dotenv.config();
 
-// Setup nodemailer transport
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-        user: "spexdev95@gmail.com",
-        pass: process.env.APP,
-    },
-});
+const URL_APP = "https://vendor.spexafrica.app";
+const URL_SITE = "https://vendor.spexafrica.site";
+const VERIFY_APP = "https://api.spexafrica.app";
+const VERIFY_SITE = "https://api.spexafrica.site";
 
-const URL = "https://vendor.spexafrica.app";
-// const verify = "https://enterprise-backend.vercel.app"
-const verify = "https://api.spexafrica.app";
+// Development URLs
+const DEV_SITE_URL = "http://localhost:3000"; // or http://localhost:3001
+const DEV_VERIFY_URL = "http://localhost:8080";
 
-const sendVerificationEmail = async (vendor, emailToken) => {
-    const url = `${verify}/api/vendor/verify/${emailToken}`;
-    // transporter.sendMail({
-    //     to: vendor.email,
-    //     subject: 'Account Verification',
-    //     html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code} Click <a href="${url}">here</a> to verify your email.`,
-    // });
+const getUrlBasedOnReferer = (req) => {
+    const referer = req.headers.referer || req.headers.origin || '';
 
-    await sendMail({
-        to: vendor.email,
-        subject: 'Verify your email',
-        html: `Thanks for signing up on spex platform ,  Account ID: ${vendor.code}. Click <a href="${url}">here</a> to verify your email.`
-    });
+    if (referer.includes('localhost')) {
+        return { baseUrl: DEV_SITE_URL, verifyUrl: DEV_VERIFY_URL };
+    } else if (referer.includes('.site')) {
+        return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
+    }
+
+    return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
 };
-const sendSuccessEmail = async (vendor) =>{
 
-    // transporter.sendMail({
-    //     to: vendor.email,
-    //     subject: 'Account Verification',
-    //     html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code}`,
-    // });
+
+
+const sendVerificationEmail = async (vendor, emailToken, req) => {
+    const { verifyUrl } = getUrlBasedOnReferer(req);
+    const url = `${verifyUrl}/api/vendor/verify/${emailToken}`;
+    console.log(verifyUrl)
     await sendMail({
         to: vendor.email,
         subject: 'Account Verification',
-        html: `Thanks for joining spex platform ${vendor.name}. Account ID: ${vendor.code}`,
+        template: 'verification', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: vendor.name,
+            verificationLink: url,
+            code: vendor.code,
+        }
     });
 };
+const sendResetEmail = async (vendor, resetToken, req) => {
+    const { baseUrl } = getUrlBasedOnReferer(req);
+    const url = `${baseUrl}/reset/password-reset?token=${resetToken}`;
 
-const sendResetEmail = async (vendor, resetToken) => {
-    const url = `${URL}//reset/password-reset?token=${resetToken}`;
     await sendMail({
         to: vendor.email,
-        subject: 'Password Reset Request',
-        html: `Click <a href="${url}">here</a> to reset your password.`,
+        subject: 'Password Reset',
+        template: 'reset', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: vendor.mail,
+            resetLink: url,
+        }
     });
 };
 
@@ -159,7 +159,7 @@ export const createVendor = async (req, res) => {
             });
 
             const emailToken = generateToken({ vendorId: vendor._id, email: vendor.email }, '2m');
-            await sendVerificationEmail(vendor, emailToken);
+            await sendVerificationEmail(vendor, emailToken ,req);
 
             setTimeout(async () => {
                 try {
@@ -240,7 +240,6 @@ export const addVendor = async (req, res) => {
                 isVerified: true,
             });
 
-            await sendSuccessEmail(vendor)
 
 
             res.status(200).json({ message: "Vendor registered successfully. Check your email for your Account ID" });
@@ -264,17 +263,18 @@ export const verifyEmail = async (req, res) => {
         }
 
         if (vendor.isVerified) {
-            return res.redirect(`${URL}/verify?status=verified`);
+            res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=verified`);
         }
 
         await Vendor.findOneAndUpdate({ email: decoded.email }, { isVerified: true });
 
 
 
-        return res.redirect(`${URL}/verify?status=success`);
+        res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=success`);
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
-            return res.redirect(`${URL}/verify?status=expired`);
+
+            res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=expired`);
         }
         console.error(error.message);
         if (!res.headersSent) {
@@ -330,13 +330,18 @@ export const signIn = async (req, res) => {
         const payload = { vendor: { id: vendor._id, email: vendor.email } };
         const token = generateToken(payload, '1d');
 
-        res.cookie('vendor', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('vendor', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('vendor', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('vendor', token, { ...cookieOptions, domain: '' });
 
         res.json({ message: 'Login successful' });
     } catch (error) {
@@ -551,11 +556,14 @@ export const updateVendor = async (req, res) => {
 // Vendor sign-out
 export const signOut = (req, res) => {
     try {
-        res.clearCookie('vendor', {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-        });
+        };
+        // Set cookie for spexafrica.app and its subdomains
+        res.clearCookie('vendor',  { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.clearCookie('vendor',  { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);

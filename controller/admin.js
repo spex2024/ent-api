@@ -8,7 +8,7 @@ import User from "../model/user.js";
 import Order from "../model/order.js";
 import Agency from "../model/agency.js";
 import Admin from "../model/admin.js";
-import {sendMail, sendSuccessMail, verifyEmail} from "../helper/mail.js";
+import {sendMail} from "../helper/mail.js";
 
 const generateToken = (payload, expiresIn) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
@@ -82,15 +82,15 @@ export const createAdmin = async (req, res) => {
                 imageUrl,
                 imagePublicId,
             });
-            await  sendMail({  to: email,
-                subject: 'Sign Up Success',
-                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
-
-            sendSuccessMail({
-                to: email,
-                subject: 'Sign Up Success',
-                html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
-            res.status(200).json({ message: "Admin created successfully", admin });
+            // await  sendMail({  to: email,
+            //     subject: 'Sign Up Success',
+            //     html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 1</p>`,})
+            //
+            // sendSuccessMail({
+            //     to: email,
+            //     subject: 'Sign Up Success',
+            //     html: `<h1>Hello, ${admin.username}</h1><p>Admin created successfully 2</p>`,})
+            // res.status(200).json({ message: "Admin created successfully", admin });
 
         } catch (error) {
             console.error(error);
@@ -123,13 +123,18 @@ export const signIn = async (req, res) => {
 
         const token = generateToken({ id: admin._id }, '1d');
 
-        res.cookie('admin', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('admin', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('admin', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('admin', token, { ...cookieOptions, domain: '' });
 
 
 
@@ -143,14 +148,24 @@ export const signIn = async (req, res) => {
 };
 
 export const signOut = (req, res) => {
-    res.cookie('admin', '', {
-        domain: '.spexafrica.app',
+    // res.cookie('admin', '', {
+    //     domain: '.spexafrica.app',
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === 'production',
+    //     maxAge: 0 // Set the cookie to expire immediately
+    // });
+
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 0 // Set the cookie to expire immediately
-    });
+    };
 
-    res.status(200).json({ message: "Sign-out successful" });
+    // Set cookie for spexafrica.app and its subdomains
+    res.clearCookie('admin',  { ...cookieOptions, domain: '.spexafrica.app' });
+    // Set cookie for spexafrica.site and its subdomains
+    res.clearCookie('admin',  { ...cookieOptions, domain: '.spexafrica.site' });
+    res.status(200).json({ message: 'Logout successful' });
+
 };
 
 export const updateAdmin = async (req, res) => {
@@ -326,7 +341,7 @@ export const getAllOrders = async (req, res) => {
             path: 'user',
             populate:'agency',
 
-        }).populate('meals').populate('vendor');
+        }).populate('vendor');
         res.status(200).json(orders);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching orders', error });

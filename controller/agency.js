@@ -10,50 +10,61 @@ import User from "../model/user.js";
 import {Meal, Vendor} from "../model/vendor.js";
 import {sendMail} from "../helper/mail.js";
 import Payment from "../model/payment.js";
+import checkAgencySubscriptions from "../helper/check-installment.js";
 dotenv.config();
-const URL = "https://enterprise.spexafrica.app";
-const verify = "https://api.spexafrica.app";
+const URL_APP = "https://enterprise.spexafrica.app";
+const URL_SITE = "https://enterprise.spexafrica.site";
+const VERIFY_APP = "https://api.spexafrica.app";
+const VERIFY_SITE = "https://api.spexafrica.site";
+
+// Development URLs
+const DEV_SITE_URL = "http://localhost:3000"; // or http://localhost:3001
+const DEV_VERIFY_URL = "http://localhost:8080";
+
+const getUrlBasedOnReferer = (req) => {
+    const referer = req.headers.referer || req.headers.origin || '';
+
+    if (referer.includes('localhost')) {
+        return { baseUrl: DEV_SITE_URL, verifyUrl: DEV_VERIFY_URL };
+    } else if (referer.includes('.site')) {
+        return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
+    }
+
+    return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
+};
 
 
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // Use `true` for port 465, `false` for all other ports
-    auth: {
-        user: "spexdev95@gmail.com",
-        pass: process.env.APP,
-    },
-});
-const sendVerificationEmail = async (agency, emailToken) => {
-    const url = `${verify}/api/enterprise/verify/${emailToken}`;
-    // transporter.sendMail({
-    //     to: agency.email,
-    //     subject: 'Verify your email',
-    //     html: `Thanks for signing up on spex platform , Company Name: ${agency.company}, Account ID: ${agency.code}. Click <a href="${url}">here</a> to verify your email.`
-    // });
+const sendVerificationEmail = async (agency, emailToken, req) => {
+    const { verifyUrl } = getUrlBasedOnReferer(req);
+    const url = `${verifyUrl}/api/enterprise/verify/${emailToken}`;
+    console.log(verifyUrl)
+    await sendMail({
+        to: agency.email,
+        subject: 'Account Verification',
+        template: 'verification', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: agency.company,
+            verificationLink: url,
+            code: agency.code,
+        }
+    });
+};
+const sendResetEmail = async (agency, resetToken, req) => {
+    const { baseUrl } = getUrlBasedOnReferer(req);
+    const url = `${baseUrl}/reset/password-reset?token=${resetToken}`;
 
     await sendMail({
         to: agency.email,
-        subject: 'Verify your email',
-        html: `Thanks for signing up on spex platform , Company Name: ${agency.company}, Account ID: ${agency.code}. Click <a href="${url}">here</a> to verify your email.`
+        subject: 'Password Reset',
+        template: 'reset', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: agency.company,
+            resetLink: url,
+        }
     });
+};
 
-};
-const sendResetEmail = async (agency, resetToken) => {
-    const url = `${URL}/reset/password-reset?token=${resetToken}`;
-    // transporter.sendMail({
-    //     to: agency.email,
-    //     subject: 'Password Reset Request',
-    //     html: `Click <a href="${url}">here</a> to reset your password.`,
-    // });
-    await sendMail({
-        to: agency.email,
-        subject: 'Password Reset Request',
-        html: `Click <a href="${url}">here</a> to reset your password.`,
-    });
-};
 // Function to generate initials from company and branch
 const generateInitials = (company, branch) => {
     const companyParts = company.split(' '); // Split company into parts by spaces
@@ -156,7 +167,7 @@ export const agencySignUp = async (req, res) => {
                 imagePublicId: uploadedPhoto.public_id
             });
 
-            await sendVerificationEmail(agency, token); // Send verification email with JWT token
+            await sendVerificationEmail(agency, token , req); // Send verification email with JWT token
 
             setTimeout(async () => {
                 const agencyToDelete = await Agency.findOne({ email, token });
@@ -177,32 +188,28 @@ export const verifyAgencyEmail = async (req, res) => {
     const token = req.params.token;
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify JWT token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await Agency.findOne({ email: decoded.email });
 
-        // Check if the user exists
         if (!user) {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        // Check if the user is already verified
         if (user.isVerified) {
-            return res.redirect(`${URL}/verify?status=verified`);
+            return res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=verified`);
         }
 
         const agencyEmail = decoded.email;
-
         const agency = await Agency.findOneAndUpdate({ email: agencyEmail }, { isVerified: true });
 
         if (!agency) {
             return res.status(404).json({ message: 'Agency not found' });
         }
 
-        res.redirect(`${URL}/verify?status=success`); // Redirect on successful verification
-
+        res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=success`);
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
-            return res.redirect(`${URL}/verify?status=expired`);
+            return res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=expired`);
         }
         console.error(error.message);
         res.status(500).send('Server Error');
@@ -228,7 +235,7 @@ export const resendVerificationEmail = async (req, res) => {
         // Generate a new verification token
         const token = jwt.sign({ email: agency.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        await sendVerificationEmail(agency, token);
+        await sendVerificationEmail(agency, token ,req);
 
         res.status(200).json({ message: 'Verification email sent successfully' });
     } catch (error) {
@@ -240,7 +247,8 @@ export const agencySignIn = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const agency = await Agency.findOne({ email }).populate('users'); // Ensure to populate users
+        // Find the agency and populate both 'users' and 'payment' collections
+        const agency = await Agency.findOne({ email }).populate('users').populate('payment');
         if (!agency) {
             return res.status(400).json({ message: 'Account does not exist or token has expired. Please create an account.' });
         }
@@ -248,25 +256,23 @@ export const agencySignIn = async (req, res) => {
         if (!agency.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
-
-        // Activate agency if it is not active but has a subscription
-        if (agency.subscription && !agency.isActive) {
-            agency.isActive = true;
-            await agency.save();
-        }
-
-        const payment = await Payment.findOne({ email });
-        if (agency.subscription) {
-            // Check if agency.payment is undefined or not an array, initialize it as an array
-            if (!Array.isArray(agency.payment)) {
-                agency.payment = [];
+        const totalPaid = agency.payment.reduce((accum, payment) => {
+            if (payment.plan === "Silver" && payment.paymentType === 'installment') {
+                return accum + payment.amountPaid; // Assuming the amountPaid field exists in the Payment model
             }
+            return accum;
+        }, 0);
 
-            // Push payment._id into the payment array
-            agency.payment.push(payment._id);
-            await agency.save(); // Save the updated agency document
-        }
+        console.log(totalPaid);
 
+// // Activate agency if it is not active but has a valid subscription
+//         if (agency.subscription && !agency.isActive ) {
+//             agency.isActive = true;
+//             await agency.save();
+//         }
+
+
+        // Continue with the password check and other operations
         const match = await bcrypt.compare(password, agency.password);
         if (!match) {
             return res.status(400).json({ message: 'Incorrect password' });
@@ -291,7 +297,8 @@ export const agencySignIn = async (req, res) => {
         agency.moneyBalance = moneyBalance.toFixed(2);
 
         await agency.save(); // Save the updated agency document
-
+         await checkAgencySubscriptions()
+        // Generate a token for the session
         const payload = {
             agency: {
                 id: agency._id,
@@ -303,18 +310,52 @@ export const agencySignIn = async (req, res) => {
         agency.token = token;
         await agency.save();
 
-        res.cookie('token', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('token', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('token', token, { ...cookieOptions});
+
 
         res.json({ message: 'Login successful' });
+
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
+    }
+};
+
+export const signOut = (req, res) => {
+    try {
+        // res.clearCookie('token', {
+        //     domain: '.spexafrica.app',
+        //     httpOnly: true,
+        //     secure: process.env.NODE_ENV === 'production',
+        //
+        // });
+
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.clearCookie('token',  { ...cookieOptions, domain: '.spexafrica.site' });
+        res.clearCookie('token',  { ...cookieOptions });
+        res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({message:error.message});
     }
 };
 export const getAllAgencies = async (req, res) => {
@@ -536,19 +577,7 @@ export const deleteAgency = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-export const signOut = (req, res) => {
-    try {
-        res.clearCookie('token', {
-            domain: '.spexafrica.app',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        });
-        res.status(200).json({ message: 'Logout successful' });
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
-    }
-};
+
 export const addVendor = async (req, res) => {
     const vendors = req.body; // Extract vendor IDs from request body
     const token = req.cookies.token; // Assuming token is stored in cookies

@@ -15,52 +15,60 @@ import {sendMail} from "../helper/mail.js";
 
 
 dotenv.config();
-const URL = "https://user.spexafrica.app";
-// const URL = "http://localhost:3000";
-// const verify = "http://localhost:8080";
-const verify = 'https://api.spexafrica.app';
 
-// const transporter = nodemailer.createTransport({
-//     service: "gmail",
-//     host: "smtp.gmail.com",
-//     port: 465,
-//     secure: true, // Use `true` for port 465, `false` for all other ports
-//     auth: {
-//         user: "spexdev95@gmail.com",
-//         pass: process.env.APP,
-//     },
-// });
+const URL_APP = "https://user.spexafrica.app";
+const URL_SITE = "https://user.spexafrica.site";
+const local = "http://localhost:3000";
+const VERIFY_APP = "https://api.spexafrica.app";
+const VERIFY_SITE = "https://api.spexafrica.site";
 
-const sendVerificationEmail = async (user, emailToken) => {
-    const url = `${verify}/api/user/verify/${emailToken}`;
-    // transporter.sendMail({
-    //     to: user.email,
-    //     subject: 'Verify your email',
-    //     html: `Thanks for signing up on spex platform ,  Account ID: ${user.code}. Click <a href="${url}">here</a> to verify your email.`
-    // });
+// Development URLs
+const DEV_SITE_URL = "http://localhost:3000"; // or http://localhost:3001
+const DEV_VERIFY_URL = "http://localhost:8080";
 
-    await sendMail({
-        to: user.email,
-        subject: 'Verify your email',
-        html: `Thanks for signing up on spex platform ,  Account ID: ${user.code}. Click <a href="${url}">here</a> to verify your email.`
-    });
-}
+const getUrlBasedOnReferer = (req) => {
+    const referer = req.headers.referer || req.headers.origin || '';
 
-const sendResetEmail = async (user, resetToken) => {
-    const url = `${URL}/reset/password-reset?token=${resetToken}`;
-    // transporter.sendMail({
-    //     to: user.email,
-    //     subject: 'Password Reset Request',
-    //     html: `Click <a href="${url}">here</a> to reset your password.`,
-    // });
+    if (referer.includes('localhost')) {
+        return { baseUrl: DEV_SITE_URL, verifyUrl: DEV_VERIFY_URL };
+    } else if (referer.includes('.site')) {
+        return { baseUrl: URL_SITE, verifyUrl: VERIFY_SITE };
+    }
 
-    await sendMail({
-        to: user.email,
-        subject: 'Password Reset Request',
-        html: `Click <a href="${url}">here</a> to reset your password.`,
-    });
+    return { baseUrl: URL_APP, verifyUrl: VERIFY_APP };
 };
 
+
+
+const sendVerificationEmail = async (user, emailToken, req) => {
+    const { verifyUrl } = getUrlBasedOnReferer(req);
+    const url = `${verifyUrl}/api/user/verify/${emailToken}`;
+    console.log(verifyUrl)
+    await sendMail({
+        to: user.email,
+        subject: 'Account Verification',
+        template: 'verification', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: user.firstName,
+            verificationLink: url,
+            code: user.code,
+        }
+    });
+};
+const sendResetEmail = async (user, resetToken, req) => {
+    const { baseUrl } = getUrlBasedOnReferer(req);
+    const url = `${baseUrl}/reset/password-reset?token=${resetToken}`;
+
+    await sendMail({
+        to: user.email,
+        subject: 'Password Reset',
+        template: 'reset', // Assuming your EJS file is 'verification.ejs'
+        context: {
+            username: user.firstName,
+            resetLink: url,
+        }
+    });
+};
 // Function to generate unique user code based on agency's initials and random 3-digit counter
 const generateUserCode = (agencyInitials, firstName, lastName) => {
     const counter = Math.floor(Math.random() * 900) + 100; // Generates a random number between 100 and 999
@@ -167,7 +175,7 @@ export const signUp = async (req, res) => {
             // Generate email verification token
             const emailToken = generateToken({ userId: user._id, email: user.email }, '1h');
 
-            await sendVerificationEmail(user, emailToken);
+            await sendVerificationEmail(user, emailToken ,req);
             setTimeout(async () => {
                 try {
 
@@ -206,7 +214,7 @@ export const verifyEmail = async (req, res) => {
 
         // Check if the user is already verified
         if (user.isVerified) {
-            return res.redirect(`${process.env.URL}/verify?status=verified`);
+            res.redirect(`${getUrlBasedOnReferer(req).baseUrl}/verify?status=verified`);
         }
 
         // Update user verification status
@@ -306,6 +314,10 @@ export const signIn = async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: 'Account does not exist or token has expired. Please create an account.' });
         }
+        if (!user.agency.isActive) {
+            return res.status(400).json({ message: 'Your company has outstanding payments, and access is currently restricted.' });
+        }
+
 
         if (!user.isVerified) {
             return res.status(400).json({ message: 'Please verify your email first.' });
@@ -349,13 +361,18 @@ export const signIn = async (req, res) => {
 
         const token = generateToken(payload, '1d');
 
-        res.cookie('user', token, {
-            domain: '.spexafrica.app',
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'none' in production, 'lax' otherwise
-            secure: process.env.NODE_ENV === 'production', // Secure flag true only in production
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+        };
+
+        // Set cookie for spexafrica.app and its subdomains
+        res.cookie('user', token, { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.cookie('user', token, { ...cookieOptions, domain: '.spexafrica.site' });
+        res.cookie('user', token, { ...cookieOptions, domain: '' });
         res.status(200).json({ message: 'Login successful' });
     } catch (error) {
         console.error(error.message);
@@ -458,11 +475,15 @@ export const getVendor = async (req, res) => {
 
 export const signOut = (req, res) => {
     try {
-        res.clearCookie('user', {
-            domain: '.spexafrica.app',
+
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-        });
+        };
+        // Set cookie for spexafrica.app and its subdomains
+        res.clearCookie('user',  { ...cookieOptions, domain: '.spexafrica.app' });
+        // Set cookie for spexafrica.site and its subdomains
+        res.clearCookie('user',  { ...cookieOptions, domain: '.spexafrica.site' });
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error(error.message);

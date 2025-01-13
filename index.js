@@ -12,6 +12,9 @@ import subscriptionPayment from './route/auth/payment.js'
 import cookieParser from "cookie-parser";
 import {v2 as cloudinary} from "cloudinary";
 import mongoose from "mongoose";
+import checkAgencySubscriptions, {checkInstallment} from "./helper/check-installment.js";
+import checkPaymentPlan from "./route/auth/cron.js";
+
 
 dotenv.config();
 
@@ -22,9 +25,12 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser())
 app.use(cors({
-    origin: ['https://admin.spexafrica.app','https://user.spexafrica.app','https://vendor.spexafrica.app','https://enterprise.spexafrica.app', 'http://localhost:3000','http://localhost:3001'], // Replace with your client URL
+    origin: ['https://admin.spexafrica.app','https://admin.spexafrica.site', 'https://user.spexafrica.app', 'https://user.spexafrica.site', 'https://vendor.spexafrica.app','https://vendor.spexafrica.site', 'https://enterprise.spexafrica.app',  'https://enterprise.spexafrica.site', 'http://localhost:3000', 'http://localhost:3001','http://localhost:3002'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));
+
 
 
 
@@ -45,10 +51,13 @@ app.use('/api/orders' ,orderRoute )
 app.use('/api/admin' ,adminRoute)
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/paystack', subscriptionPayment );
+app.use('/api/payment-plan', checkPaymentPlan );
 
 app.get('/', (req, res) => {
     res.send('Hello World')
 })
+
+checkInstallment()
 
 
 mongoose.connect(process.env.MONGODB_URI)
